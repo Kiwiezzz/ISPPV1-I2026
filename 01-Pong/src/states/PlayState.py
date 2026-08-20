@@ -61,14 +61,14 @@ class PlayState(BaseState):
             self._score(scorer=2)
             return
 
-        if ball_rect.top <= 0:
+        if pong.ball.y <= 0 and pong.ball.vy < 0:
             settings.SOUNDS["wall_hit"].play()
             pong.ball.y = 0
-            pong.ball.vy *= -1
-        elif ball_rect.bottom >= settings.VIRTUAL_HEIGHT:
+            pong.ball.vy = abs(pong.ball.vy)
+        elif pong.ball.y + pong.ball.height >= settings.VIRTUAL_HEIGHT and pong.ball.vy > 0:
             settings.SOUNDS["wall_hit"].play()
             pong.ball.y = settings.VIRTUAL_HEIGHT - pong.ball.height
-            pong.ball.vy *= -1
+            pong.ball.vy = -abs(pong.ball.vy)
 
         # Refreshed since a wall bounce above may have changed ball.y.
         ball_rect = pong.ball.get_rect()
