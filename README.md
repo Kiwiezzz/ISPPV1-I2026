@@ -4,7 +4,7 @@ This repository contains educational projects and study cases originally develop
 
 ## Credits
 
-All credit for the original study cases and course material goes to **Alejandro Mujica (R3mmurd)**. 
+All credit for the original study cases and course material goes to Prof. **Alejandro Mujica (R3mmurd)**. 
 
 This project is built using **[Gale Engine](https://pypi.org/project/gale-engine/)**, a lightweight, modular Python game engine created by him on top of Pygame. 
 
