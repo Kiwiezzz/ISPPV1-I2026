@@ -20,6 +20,7 @@ class Bird:
         self.width: float = width
         self.height: float = height
         self.vy: float = 0.0
+        self.vx: float = 0.0
         self.jumping: bool = False
 
     def get_rect(self) -> pygame.Rect:
@@ -30,13 +31,15 @@ class Bird:
 
     def update(self, dt: float) -> None:
         self.vy += settings.GRAVITY * dt
-
+        
         if self.jumping:
             settings.SOUNDS["jump"].play()
             self.vy = -settings.JUMP_TAKEOFF_SPEED
             self.jumping = False
 
         self.y += self.vy * dt
+        self.x += self.vx * dt
+        self.x = max(0, min(self.x, settings.VIRTUAL_WIDTH - self.width))
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(settings.TEXTURES["bird"], self.get_rect())

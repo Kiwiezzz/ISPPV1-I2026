@@ -20,7 +20,9 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "pause"
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "confirm")
 input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "jump")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_w, "w")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_a, "a")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_s, "s")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_d, "d")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_UP, "up")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "down")
 
@@ -50,6 +52,7 @@ BACK_SCROLL_SPEED = 50  # MAIN_SCROLL_SPEED / 2
 
 GRAVITY = 980
 JUMP_TAKEOFF_SPEED = GRAVITY / 6
+BIRD_SPEED = 150
 
 TIME_TO_SPAWN_LOGS = 1.5
 

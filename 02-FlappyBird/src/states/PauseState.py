@@ -14,6 +14,7 @@ class PauseState(BaseState):
         self.world = params["world"]
         self.bird = params["bird"]
         self.score = params["score"]
+        self.game_mode = params["game_mode"]
 
 
         self.options = [
@@ -69,7 +70,7 @@ class PauseState(BaseState):
             return
 
         if input_id == "pause":
-            self.state_machine.change("playing", world=self.world, bird=self.bird, score=self.score)
+            self.state_machine.change("playing", world=self.world, bird=self.bird, score=self.score, game_mode=self.game_mode)
             return
 
         if input_id == "w" or input_id == "up":
@@ -87,8 +88,8 @@ class PauseState(BaseState):
         elif input_id == "confirm" and input_data.pressed:
 
             if(self.selected_option == 0):
-                self.state_machine.change("playing", world=self.world, bird=self.bird, score=self.score)
+                self.state_machine.change("playing", world=self.world, bird=self.bird, score=self.score, game_mode=self.game_mode)
             elif(self.selected_option == 1):
-                self.state_machine.change("count_down")
+                self.state_machine.change("count_down", game_mode=self.game_mode)
             elif(self.selected_option == 2):
                 self.state_machine.change("title")
