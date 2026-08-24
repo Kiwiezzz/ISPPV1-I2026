@@ -38,6 +38,9 @@ class HardMode(GameMode):
         self.current_powerup_interval = random.uniform(8.0, 12.0)
         
         # Reset ghost state in case he died with it active
+        if self.is_ghost_active:
+            pygame.mixer.music.load(settings.BACKGROUND_MUSIC)
+            pygame.mixer.music.play(-1)
         self.is_ghost_active = False
         self.ghost_timer = 0.0
         settings.TEXTURES["bird"].set_alpha(255)
@@ -57,6 +60,8 @@ class HardMode(GameMode):
             if self.ghost_timer >= settings.TIME_POWERUP:
                 self.is_ghost_active = False
                 settings.TEXTURES["bird"].set_alpha(255)
+                pygame.mixer.music.load(settings.BACKGROUND_MUSIC)
+                pygame.mixer.music.play(-1)
         
 
         bird_rect = bird.get_rect()
@@ -71,6 +76,8 @@ class HardMode(GameMode):
                 self.ghost_timer = 0.0
                 settings.TEXTURES["bird"].set_alpha(128)
                 settings.SOUNDS["powerup"].play()
+                pygame.mixer.music.load(settings.MUSIC_GHOST)
+                pygame.mixer.music.play(-1)
 
 
 

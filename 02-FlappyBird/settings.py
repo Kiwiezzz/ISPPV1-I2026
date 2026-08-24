@@ -89,7 +89,10 @@ SOUNDS = {
     "powerup" : pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "powerup.wav"),
 }
 
-pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "marios_way.ogg")
+BACKGROUND_MUSIC = BASE_DIR / "assets" / "sounds" / "marios_way.ogg"
+MUSIC_GHOST = BASE_DIR / "assets" / "sounds" / "ghost.ogg"
+
+pygame.mixer.music.load(BACKGROUND_MUSIC)
 
 FONTS = {
     "medium": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", MEDIUM_TEXT_SIZE),
