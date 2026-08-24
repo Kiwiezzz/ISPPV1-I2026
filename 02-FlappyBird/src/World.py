@@ -18,6 +18,7 @@ from gale.factory import Factory
 
 import settings
 from src.LogPair import LogPair
+from PowerUp import PowerUp
 
 
 class World:
@@ -25,6 +26,7 @@ class World:
         self.background_x: float = 0.0
         self.ground_x: float = 0.0
         self.logs: List[LogPair] = []
+        self.powerups: List[PowerUp] = []
 
     def collides(self, rect: pygame.Rect) -> bool:
         if rect.bottom >= settings.VIRTUAL_HEIGHT:
@@ -37,6 +39,9 @@ class World:
 
     def add_log(self, log_pair: LogPair) -> None:
         self.logs.append(log_pair)
+
+    def add_powerup(self, powerup: PowerUp) -> None:
+        self.powerups.append(powerup)
 
     def update(self, dt: float) -> None:
         self.background_x += -settings.BACK_SCROLL_SPEED * dt
@@ -54,12 +59,20 @@ class World:
 
         self.logs = [log_pair for log_pair in self.logs if not log_pair.is_out_of_game()]
 
+        for powerup in self.powerups:
+            powerup.update(dt)
+            
+        self.powerups = [powerup for powerup in self.powerups if not powerup.is_out_of_game()]
+
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(settings.TEXTURES["background"], (round(self.background_x), 0))
 
         for log_pair in self.logs:
             log_pair.render(surface)
 
+        for powerup in self.powerups:
+            powerup.render(surface)
+            
         surface.blit(
             settings.TEXTURES["ground"],
             (round(self.ground_x), settings.VIRTUAL_HEIGHT - settings.GROUND_HEIGHT),

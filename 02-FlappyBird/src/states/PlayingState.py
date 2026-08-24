@@ -61,7 +61,6 @@ class PlayingState(BaseState):
             shadowed=True,
         )
 
-
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "pause" and input_data.pressed:
             self.state_machine.change("pause", world=self.world, bird=self.bird, score=self.score, game_mode=self.game_mode)

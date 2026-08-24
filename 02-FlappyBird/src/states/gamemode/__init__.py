@@ -1,1 +1,3 @@
-# Imports will be added here once NormalMode and HardMode are implemented.
+from .GameMode import GameMode
+from .NormalMode import NormalMode
+from .HardMode import HardMode

@@ -7,10 +7,9 @@ from gale.text import render_text
 import settings
 from src.Bird import Bird
 from src.World import World
-from src.states.gamemode.GameMode import GameMode
+from .GameMode import GameMode
 from src.LogPair import LogPair
 from gale.factory import Factory
-
 
 class NormalMode(GameMode):
 
@@ -19,15 +18,14 @@ class NormalMode(GameMode):
         self.logs_spawn_timer = 0.0
         self.last_log_y = -settings.LOG_HEIGHT + random.randint(0, 80) + 20
         self.log_pair_factory: Factory = Factory(LogPair)
+        #Fun fact: If you switched from hardmode to normal mode with ghost mode active, 
+        # the sprite would become semi-transparent.
+        settings.TEXTURES["bird"].set_alpha(255)
 
     def reset(self, generate_logs: bool) -> None:
         self.generate_logs = generate_logs
         
-
-
     def update(self, dt: float, bird: Bird, world: World) -> None:
-
-        #Bool que genera los troncos
         if self.generate_logs:
             self.logs_spawn_timer += dt
 
@@ -42,7 +40,6 @@ class NormalMode(GameMode):
                 )
                 self.last_log_y = y
                 world.add_log(self.log_pair_factory.create(settings.VIRTUAL_WIDTH, y))
-        #-----------------------------------------------------------------------------------------
 
         bird.update(dt)
         world.update(dt)
