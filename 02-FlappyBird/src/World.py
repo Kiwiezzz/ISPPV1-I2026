@@ -18,7 +18,7 @@ from gale.factory import Factory
 
 import settings
 from src.LogPair import LogPair
-from PowerUp import PowerUp
+from src.PowerUp import PowerUp
 
 
 class World:

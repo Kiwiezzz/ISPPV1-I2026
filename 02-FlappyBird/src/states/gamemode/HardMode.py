@@ -1,3 +1,5 @@
+from src import Bird
+from src import Bird
 import pygame
 import random
 
@@ -11,7 +13,7 @@ from src.World import World
 from .GameMode import GameMode
 from src.LogPair import LogPair
 from src.MovingLogPair import MovingLogPair
-from PowerUp import PowerUp
+from src.PowerUp import PowerUp
 
 class HardMode(GameMode):
 
@@ -41,7 +43,7 @@ class HardMode(GameMode):
         settings.TEXTURES["bird"].set_alpha(255)
         
     def update(self, dt: float, bird: Bird, world: World) -> None:
-        
+      
         if self.is_ghost_active:
             self.ghost_timer += dt
             if self.ghost_timer >= settings.TIME_POWERUP - 2:

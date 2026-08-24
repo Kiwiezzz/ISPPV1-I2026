@@ -8,6 +8,7 @@ alejandro.j.mujic4@gmail.com
 This file contains the definition of the class Bird.
 """
 
+
 import pygame
 
 import settings
@@ -29,6 +30,7 @@ class Bird:
     def jump(self) -> None:
         self.jumping = True
 
+
     def update(self, dt: float) -> None:
         self.vy += settings.GRAVITY * dt
         
@@ -42,4 +44,9 @@ class Bird:
         self.x = max(0, min(self.x, settings.VIRTUAL_WIDTH - self.width))
 
     def render(self, surface: pygame.Surface) -> None:
-        surface.blit(settings.TEXTURES["bird"], self.get_rect())
+        
+        angle = max(-90, min(30, -self.vy * 0.1))
+        rotated_image = pygame.transform.rotate(settings.TEXTURES["bird"], angle)
+        new_rect = rotated_image.get_rect(center=self.get_rect().center)
+        
+        surface.blit(rotated_image, new_rect.topleft)
