@@ -90,6 +90,18 @@ class PauseState(BaseState):
             if(self.selected_option == 0):
                 self.state_machine.change("playing", world=self.world, bird=self.bird, score=self.score, game_mode=self.game_mode)
             elif(self.selected_option == 1):
+
+                if getattr(self.game_mode, 'is_ghost_active', False):
+                    settings.TEXTURES["bird"].set_alpha(255)
+                    pygame.mixer.music.load(settings.BACKGROUND_MUSIC)
+                    pygame.mixer.music.play(-1)
+                    
                 self.state_machine.change("count_down", game_mode=self.game_mode)
             elif(self.selected_option == 2):
+
+                if getattr(self.game_mode, 'is_ghost_active', False):
+                    settings.TEXTURES["bird"].set_alpha(255)
+                    pygame.mixer.music.load(settings.BACKGROUND_MUSIC)
+                    pygame.mixer.music.play(-1)
+
                 self.state_machine.change("title")

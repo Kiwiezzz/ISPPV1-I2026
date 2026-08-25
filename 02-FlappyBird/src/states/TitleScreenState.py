@@ -22,6 +22,7 @@ from src.states.gamemode.HardMode import HardMode
 
 class TitleScreenState(BaseState):
     def enter(self) -> None:
+        pygame.mixer.music.play(loops=-1)
         self.world = World()
         self.options = [
                     "Normal Mode",
