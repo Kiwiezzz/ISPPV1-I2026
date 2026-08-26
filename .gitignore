@@ -1,0 +1,107 @@
+# =======================
+# Entorno virtual Python
+# =======================
+.venv/
+venv/
+env/
+ENV/
+.env/
+
+# =======================
+# Python
+# =======================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+*.so
+
+# =======================
+# Distribución / packaging
+# =======================
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+MANIFEST
+
+# =======================
+# Tests y cobertura
+# =======================
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# =======================
+# Jupyter Notebook
+# =======================
+.ipynb_checkpoints
+
+# =======================
+# Editores e IDEs
+# =======================
+# VSCode
+.vscode/
+# PyCharm
+.idea/
+*.iml
+# Spyder
+.spyderproject.cfg
+.spyproject/
+# Vim
+*.swp
+*.swo
+
+# =======================
+# Sistema operativo
+# =======================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =======================
+# Variables de entorno / secretos
+# =======================
+.env
+.env.local
+.env.*.local
+*.env
+
+# =======================
+# Logs
+# =======================
+*.log
+logs/
+
+# =======================
+# Mypy / type checking
+# =======================
+.mypy_cache/
+.dmypy.json
+dmypy.json
