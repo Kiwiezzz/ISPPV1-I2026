@@ -19,6 +19,7 @@ from gale.text import render_text
 
 import settings
 import src.powerups
+from src.Rocket import Rocket
 
 
 class PlayState(BaseState):
@@ -36,6 +37,12 @@ class PlayState(BaseState):
             + settings.PADDLE_GROW_UP_POINTS * (self.paddle.size + 1) * self.level
         )
         self.powerups = params.get("powerups", [])
+        self.rockets = params.get("rockets", [])
+        self.cannons_powerup = params.get("cannons_powerup", None)
+        self.catch_powerup = params.get("catch_powerup", None)
+        self.caught_ball = params.get("caught_ball", None)
+        self.ball_offset_x = params.get("ball_offset_x", 0)
+        self.bomb_powerup = params.get("bomb_powerup", None)
 
         if not params.get("resume", False):
             self.balls[0].vx = random.randint(-80, 80)
@@ -48,15 +55,29 @@ class PlayState(BaseState):
         self.paddle.update(dt)
 
         for ball in self.balls:
+            if ball is self.caught_ball:
+                r = self.paddle.get_collision_rect()
+                ball.x = r.x + self.ball_offset_x
+                ball.y = r.y - ball.height
+                continue
+
             ball.update(dt)
             ball.solve_world_boundaries()
 
-            # Check collision with the paddle
             if ball.collides(self.paddle):
-                settings.SOUNDS["paddle_hit"].stop()
-                settings.SOUNDS["paddle_hit"].play()
-                ball.rebound(self.paddle)
-                ball.push(self.paddle)
+                if (self.catch_powerup is not None
+                        and self.catch_powerup.active_powerup
+                        and self.caught_ball is None):
+                    r = self.paddle.get_collision_rect()
+                    self.ball_offset_x = ball.x - r.x
+                    self.caught_ball = ball
+                    ball.vx = 0
+                    ball.vy = 0
+                else:
+                    settings.SOUNDS["paddle_hit"].stop()
+                    settings.SOUNDS["paddle_hit"].play()
+                    ball.rebound(self.paddle)
+                    ball.push(self.paddle)
 
             # Check collision with brickset
             if not ball.collides(self.brickset):
@@ -67,9 +88,35 @@ class PlayState(BaseState):
             if brick is None:
                 continue
 
-            brick.hit()
+            bomb_active = self.bomb_powerup is not None and self.bomb_powerup.active_powerup
+            brick.hit(play_sound=not bomb_active)
             self.score += brick.score()
             ball.rebound(brick)
+            
+            # Ensure that the block that hits the ball receives double damage
+            if bomb_active:
+                settings.SOUNDS["bomb"].stop()
+                settings.SOUNDS["bomb"].play()
+                if not brick.broken:
+                    brick.hit(play_sound=False)
+                    self.score += brick.score()
+
+                br = brick.get_collision_rect()
+                hit_row = (br.y - self.brickset.collision_rect.y) // 16
+                hit_col = (br.x - self.brickset.collision_rect.x) // 32
+                for dr in range(-1, 2):
+                    for dc in range(-1, 2):
+                        if dr == 0 and dc == 0:
+                            continue
+                        neighbor = self.brickset.get_brick(hit_row + dr, hit_col + dc)
+                        if neighbor is not None and not neighbor.broken:
+                            neighbor.hit(play_sound=False)
+                            self.score += neighbor.score()
+                            # This is designed to take down two tiers in one hit while the power-up is active
+                            if not neighbor.broken:
+                                neighbor.hit(play_sound=False)
+                                self.score += neighbor.score()
+
 
             # Check earn life
             if self.score >= self.points_to_next_live:
@@ -86,11 +133,12 @@ class PlayState(BaseState):
                 )
                 self.paddle.inc_size()
 
-            # Chance to generate two more balls
+            # Random chance of generating a powerup
             if random.random() < 0.1:
+                powerup_name = random.choice(settings.POWERUP_TYPES)
                 r = brick.get_collision_rect()
                 self.powerups.append(
-                    self.powerups_abstract_factory.get_factory("TwoMoreBall").create(
+                    self.powerups_abstract_factory.get_factory(powerup_name).create(
                         r.centerx - 8, r.centery - 8
                     )
                 )
@@ -124,13 +172,45 @@ class PlayState(BaseState):
             if powerup.collides(self.paddle):
                 powerup.take(self)
 
-        # Remove powerups that are not in play
         self.powerups = [p for p in self.powerups if p.active]
 
+        if self.catch_powerup is not None and self.catch_powerup.active_powerup:
+            self.catch_powerup.update(dt)
+            if not self.catch_powerup.active_powerup:
+                if self.caught_ball is not None:
+                    self.caught_ball.vx = random.randint(-80, 80)
+                    self.caught_ball.vy = random.randint(-170, -100)
+                    self.caught_ball = None
+                self.catch_powerup = None
+
+        if self.bomb_powerup is not None and self.bomb_powerup.active_powerup:
+            self.bomb_powerup.update(dt)
+            if not self.bomb_powerup.active_powerup:
+                self.bomb_powerup = None
+
+        if self.cannons_powerup is not None and self.cannons_powerup.active_powerup:
+            self.cannons_powerup.update(dt)
+            if not self.cannons_powerup.active_powerup:
+                self.cannons_powerup = None
+
+        # Update rockets
+        for rocket in self.rockets:
+            rocket.update(dt)
+
+            # It collides with the brickset, destroys the brick in question,
+            # and then the rocket self-destructs
+            if rocket.collides(self.brickset):
+                brick = self.brickset.get_colliding_brick(rocket.get_collision_rect())
+                if brick is not None and not brick.broken:
+                    brick.hit()
+                    self.score += brick.score()
+                    rocket.active = False  
+
+        # Remove rockets that are not in play
+        self.rockets = [r for r in self.rockets if r.active]
+
         # Check victory
-        if self.brickset.size == 1 and next(
-            (True for _, b in self.brickset.bricks.items() if b.broken), False
-        ):
+        if self.brickset.size > 0 and all(b.broken for b in self.brickset.bricks.values()):
             self.state_machine.change(
                 "victory",
                 lives=self.lives,
@@ -181,6 +261,33 @@ class PlayState(BaseState):
         for powerup in self.powerups:
             powerup.render(surface)
 
+        if self.cannons_powerup is not None:
+            self.cannons_powerup.render(surface)
+
+        for rocket in self.rockets:
+            rocket.render(surface)
+
+        BAR_W = 60
+        BAR_H = 5
+        x0 = 4
+        y0 = 5
+        slot = 0
+        for label, powerup in [
+            ("CatchTheBall", self.catch_powerup),
+            ("Cannons", self.cannons_powerup),
+            ("Bomb", self.bomb_powerup),
+        ]:
+            if powerup is None or not powerup.active_powerup:
+                continue
+            y = y0 + slot * 18
+            render_text(surface, label, settings.FONTS["tiny"], x0, y, (255, 255, 255))
+            bar_y = y + 8
+            remaining = max(0.0, 1.0 - powerup.timer / powerup.DURATION)
+            pygame.draw.rect(surface, (255, 255, 255), (x0 - 1, bar_y - 1, BAR_W + 2, BAR_H + 2), 1)
+            pygame.draw.rect(surface, (50, 205, 50), (x0, bar_y, int(BAR_W * remaining), BAR_H))
+            slot += 1
+
+
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "move_left":
             if input_data.pressed:
@@ -193,15 +300,34 @@ class PlayState(BaseState):
             elif input_data.released and self.paddle.vx > 0:
                 self.paddle.vx = 0
         elif input_id == "pause" and input_data.pressed:
-            self.state_machine.change(
-                "pause",
-                level=self.level,
-                score=self.score,
-                lives=self.lives,
-                paddle=self.paddle,
-                balls=self.balls,
-                brickset=self.brickset,
-                points_to_next_live=self.points_to_next_live,
-                live_factor=self.live_factor,
-                powerups=self.powerups,
-            )
+            if self.caught_ball is not None:
+                self.caught_ball.vx = random.randint(-80, 80)
+                self.caught_ball.vy = random.randint(-170, -100)
+                self.caught_ball = None
+            else:
+                self.state_machine.change(
+                    "pause",
+                    level=self.level,
+                    score=self.score,
+                    lives=self.lives,
+                    paddle=self.paddle,
+                    balls=self.balls,
+                    brickset=self.brickset,
+                    points_to_next_live=self.points_to_next_live,
+                    live_factor=self.live_factor,
+                    powerups=self.powerups,
+                    rockets=self.rockets,
+                    cannons_powerup=self.cannons_powerup,
+                    catch_powerup=self.catch_powerup,
+                    caught_ball=self.caught_ball,
+                    ball_offset_x=self.ball_offset_x,
+                    bomb_powerup=self.bomb_powerup,
+                )
+        elif input_id == "fire" and input_data.pressed:
+            # Fire only if there are active cannons and no rockets in flight
+            if self.cannons_powerup is not None and self.cannons_powerup.active_powerup and len(self.rockets) == 0:
+                settings.SOUNDS["cannon"].stop()
+                settings.SOUNDS["cannon"].play()
+                r = self.paddle.get_collision_rect()
+                self.rockets.append(Rocket(r.left - 4, r.y - 16, flipped=True))
+                self.rockets.append(Rocket(r.right - 4, r.y - 16, flipped=False))

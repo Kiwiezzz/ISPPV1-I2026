@@ -31,6 +31,7 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RIGHT, "move_ri
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "move_down")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "pause")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_f, "fire")
 
 TITLE = "Breakout"
 
@@ -52,6 +53,7 @@ LIVE_POINTS_BASE = 2000
 PADDLE_GROW_UP_POINTS = 200
 
 POWERUP_SPEED = 50
+POWERUP_TYPES = ["TwoMoreBall", "CatchTheBall", "Bomb", "Cannons"]
 
 BASE_DIR = Path(__file__).parent
 
@@ -73,6 +75,8 @@ SOUNDS = {
     "life": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "life.wav"),
     "grow_up": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "grow_up.wav"),
     "pause": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "pause.wav"),
+    "cannon": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "cannon.wav"),
+    "bomb" : pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "bomb.wav" )
 }
 
 TEXTURES = {
