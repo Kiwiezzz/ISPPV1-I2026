@@ -26,30 +26,18 @@ class PlayState(BaseState):
         self.board = enter_params["board"]
         self.score = enter_params["score"]
 
-        # Position in the grid which we are highlighting
-        self.board_highlight_i1 = -1
-        self.board_highlight_j1 = -1
-        self.board_highlight_i2 = -1
-        self.board_highlight_j2 = -1
-
-        self.highlighted_tile = False
+        # Variables for Drag & Drop. Store Original Values of dragged Tile if the movement fail
+        self.dragged_tile = None
+        self.dragged_start_i = -1
+        self.dragged_start_j = -1
+        self.dragged_start_x = -1
+        self.dragged_start_y = -1
 
         self.active = True
 
         self.timer = settings.LEVEL_TIME
 
-        self.goal_score = self.level * 1.25 * 1000
-
-        # A surface that supports alpha to highlight a selected tile
-        self.tile_alpha_surface = pygame.Surface(
-            (settings.TILE_SIZE, settings.TILE_SIZE), pygame.SRCALPHA
-        )
-        pygame.draw.rect(
-            self.tile_alpha_surface,
-            (255, 255, 255, 96),
-            pygame.Rect(0, 0, settings.TILE_SIZE, settings.TILE_SIZE),
-            border_radius=7,
-        )
+        self.goal_score = int(self.level * 1.25 * 1000 * 1.5)
 
         # A surface that supports alpha to draw behind the text.
         self.text_alpha_surface = pygame.Surface((212, 136), pygame.SRCALPHA)
@@ -77,13 +65,22 @@ class PlayState(BaseState):
             settings.SOUNDS["next-level"].play()
             self.state_machine.change("begin", level=self.level + 1, score=self.score)
 
+        if self.active and self.dragged_tile is not None:
+            #Get the raw position of the Mouse
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            #And then scale that raw position to virtual of the game            
+            mouse_x = mouse_x * settings.VIRTUAL_WIDTH // settings.WINDOW_WIDTH
+            mouse_y = mouse_y * settings.VIRTUAL_HEIGHT // settings.WINDOW_HEIGHT
+            
+            self.dragged_tile.x = mouse_x - self.board.x - settings.TILE_SIZE // 2
+            self.dragged_tile.y = mouse_y - self.board.y - settings.TILE_SIZE // 2
+
     def render(self, surface: pygame.Surface) -> None:
         self.board.render(surface)
 
-        if self.highlighted_tile:
-            x = self.highlighted_j1 * settings.TILE_SIZE + self.board.x
-            y = self.highlighted_i1 * settings.TILE_SIZE + self.board.y
-            surface.blit(self.tile_alpha_surface, (x, y))
+        #Draw the dragged Tile
+        if self.dragged_tile is not None:
+            self.dragged_tile.render(surface, self.board.x, self.board.y)
 
         surface.blit(self.text_alpha_surface, (16, 16))
         render_text(
@@ -127,81 +124,154 @@ class PlayState(BaseState):
         if not self.active:
             return
 
-        if input_id == "click" and input_data.pressed:
-            pos_x, pos_y = input_data.position
-            pos_x = pos_x * settings.VIRTUAL_WIDTH // settings.WINDOW_WIDTH
-            pos_y = pos_y * settings.VIRTUAL_HEIGHT // settings.WINDOW_HEIGHT
-            i = (pos_y - self.board.y) // settings.TILE_SIZE
-            j = (pos_x - self.board.x) // settings.TILE_SIZE
+        if input_id == "click":
+            if input_data.pressed:
+                if self.dragged_tile is None:
+                    pos_x, pos_y = input_data.position
+                    pos_x = pos_x * settings.VIRTUAL_WIDTH // settings.WINDOW_WIDTH
+                    pos_y = pos_y * settings.VIRTUAL_HEIGHT // settings.WINDOW_HEIGHT
+                    i = (pos_y - self.board.y) // settings.TILE_SIZE
+                    j = (pos_x - self.board.x) // settings.TILE_SIZE
+                    
+                    if 0 <= i < settings.BOARD_HEIGHT and 0 <= j < settings.BOARD_WIDTH:
+                        self.dragged_tile = self.board.tiles[i][j]
+                        self.dragged_start_i = i
+                        self.dragged_start_j = j
+                        self.dragged_start_x = self.dragged_tile.x
+                        self.dragged_start_y = self.dragged_tile.y
 
-            if 0 <= i < settings.BOARD_HEIGHT and 0 <= j <= settings.BOARD_WIDTH:
-                if not self.highlighted_tile:
-                    self.highlighted_tile = True
-                    self.highlighted_i1 = i
-                    self.highlighted_j1 = j
-                else:
-                    self.highlighted_i2 = i
-                    self.highlighted_j2 = j
-                    di = abs(self.highlighted_i2 - self.highlighted_i1)
-                    dj = abs(self.highlighted_j2 - self.highlighted_j1)
-
-                    if di <= 1 and dj <= 1 and di != dj:
+            elif input_data.released:
+                if self.dragged_tile is not None:
+                    pos_x, pos_y = input_data.position
+                    pos_x = pos_x * settings.VIRTUAL_WIDTH // settings.WINDOW_WIDTH
+                    pos_y = pos_y * settings.VIRTUAL_HEIGHT // settings.WINDOW_HEIGHT
+                    
+                    end_i = (pos_y - self.board.y) // settings.TILE_SIZE
+                    end_j = (pos_x - self.board.x) // settings.TILE_SIZE
+                    
+                    # Check if end position is valid and adjacent to start position
+                    if end_i == self.dragged_start_i and end_j == self.dragged_start_j:
+                        # If the tile is a bomb, explode it
+                        tile = self.dragged_tile
+                        if getattr(tile, 'is_line_bomb', False) or getattr(tile, 'is_color_bomb', False):
+                            self.active = False
+                            self.board.matches.append([tile])
+                            
+                            destroyed_tiles = self.board.remove_matches()
+                            self.score += len(destroyed_tiles) * 50
+                            
+                            falling_tiles = self.board.get_falling_tiles()
+                            Timer.tween(
+                                0.25,
+                                falling_tiles,
+                                on_finish=lambda: self._calculate_matches(
+                                    [item[0] for item in falling_tiles]
+                                ),
+                            )
+                            settings.SOUNDS["bomb"].stop()
+                            settings.SOUNDS["bomb"].play()
+                        
+                        else:
+                            # return to original position if not a bomb
+                            self.dragged_tile.x = self.dragged_start_x
+                            self.dragged_tile.y = self.dragged_start_y
+                        
+                        self.dragged_tile = None
+                        
+                    elif (0 <= end_i < settings.BOARD_HEIGHT and 0 <= end_j < settings.BOARD_WIDTH and
+                        (abs(end_i - self.dragged_start_i) + abs(end_j - self.dragged_start_j) == 1)):
+                        
+                        target_tile = self.board.tiles[end_i][end_j]
+                        
+                        # Temporarily swap in the board
+                        self.board.tiles[self.dragged_start_i][self.dragged_start_j] = target_tile
+                        self.board.tiles[end_i][end_j] = self.dragged_tile
+                        
+                        self.dragged_tile.i = end_i
+                        self.dragged_tile.j = end_j
+                        target_tile.i = self.dragged_start_i
+                        target_tile.j = self.dragged_start_j
+                        
+                        # Check matches
+                        matches = self.board.calculate_matches_for([self.dragged_tile, target_tile], simulate=True)
+                        
+                        if matches is None:
+                            # Revert swap (invalid move)
+                            self.board.tiles[self.dragged_start_i][self.dragged_start_j] = self.dragged_tile
+                            self.board.tiles[end_i][end_j] = target_tile
+                            
+                            self.dragged_tile.i = self.dragged_start_i
+                            self.dragged_tile.j = self.dragged_start_j
+                            target_tile.i = end_i
+                            target_tile.j = end_j
+                            
+                            # Animate dragged tile back to its original spot
+                            self.active = False
+                            Timer.tween(
+                                0.25,
+                                [
+                                    (self.dragged_tile, {"x": self.dragged_start_x, "y": self.dragged_start_y}),
+                                ],
+                                on_finish=lambda: setattr(self, 'active', True)
+                            )
+                        else:
+                            # Valid swap
+                            self.active = False
+                            
+                            target_target_x = self.dragged_start_j * settings.TILE_SIZE
+                            target_target_y = self.dragged_start_i * settings.TILE_SIZE
+                            
+                            dragged_target_x = end_j * settings.TILE_SIZE
+                            dragged_target_y = end_i * settings.TILE_SIZE
+                            
+                            # Use variables in local scope for the lambda
+                            dtile = self.dragged_tile
+                            ttile = target_tile
+                            Timer.tween(
+                                0.25,
+                                [
+                                    (dtile, {"x": dragged_target_x, "y": dragged_target_y}),
+                                    (ttile, {"x": target_target_x, "y": target_target_y}),
+                                ],
+                                on_finish=lambda: self._calculate_matches([dtile, ttile])
+                            )
+                    else:
+                        # Dropped on invalid cell or not adjacent cell
                         self.active = False
-                        tile1 = self.board.tiles[self.highlighted_i1][
-                            self.highlighted_j1
-                        ]
-                        tile2 = self.board.tiles[self.highlighted_i2][
-                            self.highlighted_j2
-                        ]
-
-                        def arrive():
-                            tile1 = self.board.tiles[self.highlighted_i1][
-                                self.highlighted_j1
-                            ]
-                            tile2 = self.board.tiles[self.highlighted_i2][
-                                self.highlighted_j2
-                            ]
-                            (
-                                self.board.tiles[tile1.i][tile1.j],
-                                self.board.tiles[tile2.i][tile2.j],
-                            ) = (
-                                self.board.tiles[tile2.i][tile2.j],
-                                self.board.tiles[tile1.i][tile1.j],
-                            )
-                            tile1.i, tile1.j, tile2.i, tile2.j = (
-                                tile2.i,
-                                tile2.j,
-                                tile1.i,
-                                tile1.j,
-                            )
-                            self._calculate_matches([tile1, tile2])
-
-                        # Swap tiles
                         Timer.tween(
                             0.25,
                             [
-                                (tile1, {"x": tile2.x, "y": tile2.y}),
-                                (tile2, {"x": tile1.x, "y": tile1.y}),
+                                (self.dragged_tile, {"x": self.dragged_start_x, "y": self.dragged_start_y}),
                             ],
-                            on_finish=arrive,
+                            on_finish=lambda: setattr(self, 'active', True)
                         )
-
-                    self.highlighted_tile = False
+                        
+                    self.dragged_tile = None
 
     def _calculate_matches(self, tiles: List) -> None:
         matches = self.board.calculate_matches_for(tiles)
 
         if matches is None:
+            # The board is stable. Check if there are any valid moves left.
+            # If not, recreate the board until at least one valid move exists.
+            while not self.board.has_possible_matches():
+                self.board._initialize_tiles()
+                
             self.active = True
             return
 
         settings.SOUNDS["match"].stop()
         settings.SOUNDS["match"].play()
 
+        initial_match_count = sum(len(match) for match in matches)
         for match in matches:
             self.score += len(match) * 50
 
-        self.board.remove_matches()
+        destroyed_tiles = self.board.remove_matches()
+        
+        # Extra points for chain reactions from bombs
+        extra_destroyed = max(0, len(destroyed_tiles) - initial_match_count)
+        self.score += extra_destroyed * 50
 
         falling_tiles = self.board.get_falling_tiles()
 

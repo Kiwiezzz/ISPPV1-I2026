@@ -104,11 +104,11 @@ class PlayState(BaseState):
                 br = brick.get_collision_rect()
                 hit_row = (br.y - self.brickset.collision_rect.y) // 16
                 hit_col = (br.x - self.brickset.collision_rect.x) // 32
-                for dr in range(-1, 2):
-                    for dc in range(-1, 2):
-                        if dr == 0 and dc == 0:
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        if i == 0 and j == 0:
                             continue
-                        neighbor = self.brickset.get_brick(hit_row + dr, hit_col + dc)
+                        neighbor = self.brickset.get_brick(hit_row + i, hit_col + j)
                         if neighbor is not None and not neighbor.broken:
                             neighbor.hit(play_sound=False)
                             self.score += neighbor.score()

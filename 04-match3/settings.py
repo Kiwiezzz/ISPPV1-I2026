@@ -44,7 +44,7 @@ NUM_COLORS = 18
 BACKGROUND_SCROLL_SPEED = 40
 BACKGROUND_LOOPING_POINT = -1024 + VIRTUAL_WIDTH - 4 + 51
 
-LEVEL_TIME = 60
+LEVEL_TIME = 260
 
 BASE_DIR = Path(__file__).parent
 
@@ -53,6 +53,8 @@ TEXTURES = {
         BASE_DIR / "assets" / "graphics" / "background.png"
     ),
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "match3.png"),
+    "line-bomb": pygame.image.load(BASE_DIR / "assets" / "graphics" / "line_bomb.png"),
+    "color-bomb": pygame.image.load(BASE_DIR / "assets" / "graphics" / "Color_bomb.png"),
 }
 
 FRAMES = {"tiles": generate_tile_frames(TEXTURES["tiles"])}
@@ -64,6 +66,7 @@ SOUNDS = {
     "match": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "match.wav"),
     "next-level": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "next-level.wav"),
     "select": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "select.wav"),
+    "bomb": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "bomb.wav"),
 }
 
 pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "music.mp3")
