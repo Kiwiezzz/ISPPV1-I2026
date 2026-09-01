@@ -58,6 +58,13 @@ class GameEntity(mixins.DrawableMixin, mixins.AnimatedMixin, mixins.CollidableMi
     ) -> None:
         self.state_machine.change(state_id, *args, **kwargs)
 
+    def on_hit_key_block(self, row: int, col: int) -> None:
+        """
+        Called when this entity headbutts a tile with 
+        is_key=True. Override in subclasses.
+        """
+        pass
+
     def update(self, dt: float) -> None:
         # Applied unconditionally (not just while jumping/falling) so the
         # vertical move below is never a no-op dy=0 call, which would skip
@@ -81,7 +88,19 @@ class GameEntity(mixins.DrawableMixin, mixins.AnimatedMixin, mixins.CollidableMi
         if collided_y:
             if self.vy > 0:
                 self.on_ground = True
-            self.vy = 0
+            elif self.vy < 0:
+                head_x = self.x + self.width / 2
+                head_y = self.y - 1    
+
+                row, col = self.tilemap.tile_at(head_x, head_y)
+
+                gid = self.tilemap.get_gid(self.COLLISION_LAYER, row, col)
+
+                props = self.tilemap.properties_of_gid(gid)
+
+                if props.get("is_key", True):
+                    self.on_hit_key_block(row, col)
+            self.vy = 0 
         else:
             self.on_ground = False
 

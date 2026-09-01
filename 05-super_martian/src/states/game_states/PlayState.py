@@ -8,6 +8,7 @@ alejandro.j.mujic4@gmail.com
 This file contains the class PlayState.
 """
 
+from src.FlyingCreature import FlyingCreature
 from typing import Dict, Any
 
 import pygame
@@ -26,7 +27,7 @@ from src.Player import Player
 
 class PlayState(BaseState):
     def enter(self, **enter_params: Dict[str, Any]) -> None:
-        self.level = enter_params.get("level", 1)
+        self.level = enter_params.get("level", 2)
         self.game_level = enter_params.get("game_level")
         if self.game_level is None:
             self.game_level = GameLevel(self.level)
@@ -59,7 +60,7 @@ class PlayState(BaseState):
         self.clock = enter_params.get("clock")
 
         if self.clock is None:
-            self.clock = Clock(30)
+            self.clock = Clock(50)
 
             def countdown_timer():
                 self.clock.count_down()
@@ -91,7 +92,18 @@ class PlayState(BaseState):
 
         for creature in self.game_level.creatures:
             if self.player.collides(creature):
-                self.player.change_state("dead")
+                # Stomp: player falling and their bottom edge hits the creature's
+                # upper half
+                if (self.player.vy > 0 and
+                        self.player.y + self.player.height <= creature.y + creature.height / 2):
+                    if isinstance(creature, FlyingCreature):
+                        creature.change_state("fall")
+                    else:
+                        creature.is_dead = True
+                    self.player.score += 50
+                    self.player.vy = -settings.JUMP_CUT_VELOCITY  # small bounce
+                else:
+                    self.player.change_state("dead")
 
         for item in self.game_level.items:
             if not item.active or not item.collidable:

@@ -8,6 +8,7 @@ alejandro.j.mujic4@gmail.com
 This file contains the class Player.
 """
 
+import settings
 from typing import TypeVar
 
 from gale.command import CommandBindings
@@ -56,6 +57,12 @@ class Player(GameEntity):
             "move_right", press=MOVE_RIGHT, release=STOP_MOVE_RIGHT
         )
         self.command_bindings.bind("jump", press=JUMP, release=STOP_JUMP)
+    
+    def on_hit_key_block(self, row: int, col: int) -> None:
+        if(self.score>= 450):
+            settings.SOUNDS["hit_question_block"].play()
+        else:
+            settings.SOUNDS["hit_block"].play()
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
         self.command_bindings.dispatch(self, input_id, input_data)
