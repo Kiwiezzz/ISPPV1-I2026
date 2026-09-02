@@ -9,10 +9,12 @@ This file contains the class Player.
 """
 
 import settings
+from src.Key import Key
 from typing import TypeVar
 
 from gale.command import CommandBindings
 from gale.input_handler import InputData
+
 
 from src.GameEntity import GameEntity
 from src.commands import (
@@ -50,6 +52,7 @@ class Player(GameEntity):
         )
         self.score = 0
         self.coins_counter = {54: 0, 55: 0, 61: 0, 62: 0}
+        self.key_block_used = False  # Prevents the key block from triggering more than once
 
         self.command_bindings = CommandBindings()
         self.command_bindings.bind("move_left", press=MOVE_LEFT, release=STOP_MOVE_LEFT)
@@ -59,8 +62,20 @@ class Player(GameEntity):
         self.command_bindings.bind("jump", press=JUMP, release=STOP_JUMP)
     
     def on_hit_key_block(self, row: int, col: int) -> None:
-        if(self.score>= 450):
+        if self.key_block_used:
+            return
+
+        if self.score >= settings.KEY_SCORE_TARGET:
             settings.SOUNDS["hit_question_block"].play()
+            self.key_block_used = True
+
+            # Convert tile coords to world pixel position
+            block_x, block_y = self.tilemap.position_of(row, col)
+
+            # Create the key and register it so PlayState's loop renders
+            # it and detects player collision automatically
+            key = Key(block_x, block_y)
+            self.game_level.items.append(key)
         else:
             settings.SOUNDS["hit_block"].play()
 

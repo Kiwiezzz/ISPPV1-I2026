@@ -59,6 +59,9 @@ FLYING_CREATURE_MAX_SPAWN_DELAY = 9
 
 NUM_LEVELS = 2
 
+# Score the player must reach before the key block appears in the level
+KEY_SCORE_TARGET = 450
+
 BASE_DIR = pathlib.Path(__file__).parent
 
 TILEMAPS = {
@@ -70,12 +73,14 @@ TEXTURES = {
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "tileset.png"),
     "martian": pygame.image.load(BASE_DIR / "assets" / "graphics" / "martian.png"),
     "creatures": pygame.image.load(BASE_DIR / "assets" / "graphics" / "creatures.png"),
+    "key": pygame.image.load(BASE_DIR / "assets" / "graphics" / "key.png"),
 }
 
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
     "martian": frames.generate_frames(TEXTURES["martian"], 16, 20),
     "creatures": frames.generate_frames(TEXTURES["creatures"], 16, 16),
+    "key": frames.generate_frames(TEXTURES["key"], 16, 16),
 }
 
 SOUNDS = {
@@ -87,6 +92,7 @@ SOUNDS = {
     "count": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "count.wav"),
     "hit_block": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "hit_block.wav"),
     "hit_question_block": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "hit_question_block.wav"),
+    "victory": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "victory.wav"),
 }
 
 SOUNDS["pickup_coin"].set_volume(0.5)

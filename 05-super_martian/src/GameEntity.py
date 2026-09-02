@@ -98,7 +98,7 @@ class GameEntity(mixins.DrawableMixin, mixins.AnimatedMixin, mixins.CollidableMi
 
                 props = self.tilemap.properties_of_gid(gid)
 
-                if props.get("is_key", True):
+                if props.get("is_key", False):
                     self.on_hit_key_block(row, col)
             self.vy = 0 
         else:

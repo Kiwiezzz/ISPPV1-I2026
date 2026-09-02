@@ -27,7 +27,7 @@ from src.Player import Player
 
 class PlayState(BaseState):
     def enter(self, **enter_params: Dict[str, Any]) -> None:
-        self.level = enter_params.get("level", 2)
+        self.level = enter_params.get("level", 1)
         self.game_level = enter_params.get("game_level")
         if self.game_level is None:
             self.game_level = GameLevel(self.level)
@@ -75,6 +75,40 @@ class PlayState(BaseState):
         else:
             Timer.resume()
 
+        # Overlay used for the fade-in (on enter) and fade-out (on key collect) transitions
+        self.fade_overlay = pygame.Surface(
+            (settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT), pygame.SRCALPHA
+        )
+        self.fade_alpha = 255  # Start fully black, tween down to 0 for the fade-in
+        self.transitioning = False  # Guard: only one transition at a time
+        self.is_victory = False     # True once the score target is reached
+
+        Timer.tween(
+            0.5,
+            [(self, {"fade_alpha": 0})],
+            ease_function_name="in_cubic",
+        )
+
+        # Scan the ground layer for the is_key tile, store its location and
+        # original gid, then hide it by zeroing that cell so the block only
+        # appears once the player reaches the score target.
+        self._key_block_row = None
+        self._key_block_col = None
+        self._key_block_gid = None
+
+        for row in range(self.tilemap.rows):
+            for col in range(self.tilemap.cols):
+                gid = self.tilemap.get_gid("ground", row, col)
+                if self.tilemap.properties_of_gid(gid).get("is_key", False):
+                    self._key_block_row = row
+                    self._key_block_col = col
+                    self._key_block_gid = gid
+                    # Hide the block until the score target is reached
+                    self.tilemap.set_gid("ground", row, col, 0)
+                    break
+            if self._key_block_gid is not None:
+                break
+
     def update(self, dt: float) -> None:
         if self.player.is_dead:
             pygame.mixer.music.stop()
@@ -90,28 +124,74 @@ class PlayState(BaseState):
         self.camera.update(dt)
         self.game_level.update(dt)
 
-        for creature in self.game_level.creatures:
-            if self.player.collides(creature):
-                # Stomp: player falling and their bottom edge hits the creature's
-                # upper half
-                if (self.player.vy > 0 and
-                        self.player.y + self.player.height <= creature.y + creature.height / 2):
-                    if isinstance(creature, FlyingCreature):
-                        creature.change_state("fall")
+        # Creature collisions are disabled after victory
+        if not self.is_victory:
+            for creature in self.game_level.creatures:
+                if self.player.collides(creature):
+                    
+                    # introduce stomp like in a certain game by a company I can't mention
+                    if (self.player.vy > 0 and
+                            self.player.y + self.player.height <= creature.y + creature.height / 2):
+                        if isinstance(creature, FlyingCreature):
+                            creature.change_state("fall")
+                        else:
+                            creature.is_dead = True
+                        self.player.score += 50
+                        self.player.vy = -settings.JUMP_CUT_VELOCITY  # small bounce
                     else:
-                        creature.is_dead = True
-                    self.player.score += 50
-                    self.player.vy = -settings.JUMP_CUT_VELOCITY  # small bounce
-                else:
-                    self.player.change_state("dead")
+                        self.player.change_state("dead")
 
+        # Reveal the key block once the score target is reached
+        if (
+            not self.is_victory
+            and self._key_block_gid is not None
+            and self.player.score >= settings.KEY_SCORE_TARGET
+        ):
+            self.is_victory = True
+            self.tilemap.set_gid(
+                "ground",
+                self._key_block_row,
+                self._key_block_col,
+                self._key_block_gid,
+            )
+            settings.SOUNDS["victory"].play()
+            Timer.clear() 
+
+        # Coin collection is disabled after victory; the Key is still collidable
         for item in self.game_level.items:
             if not item.active or not item.collidable:
                 continue
 
+            is_key = getattr(item, "spawn_y", None) is not None
+
+            if self.is_victory and not is_key:
+                continue  # Pass through all coins after victory
+
             if self.player.collides(item):
                 item.on_collide(self.player)
                 item.on_consume(self.player)
+
+                if is_key and not self.transitioning:
+                    self._begin_level_transition()
+
+    def _begin_level_transition(self) -> None:
+        self.transitioning = True
+
+        Timer.clear()
+
+        Timer.tween(
+            1.0,
+            [(self, {"fade_alpha": 255})],
+            ease_function_name="linear",
+            on_finish=self._go_to_next_level,
+        )
+
+    def _go_to_next_level(self) -> None:
+        next_level = self.level + 1
+
+        pygame.mixer.music.stop()
+        pygame.mixer.music.unload()
+        self.state_machine.change("play", level=next_level)
 
     def render(self, surface: pygame.Surface) -> None:
         self.game_level.render(surface, self.camera)
@@ -136,6 +216,11 @@ class PlayState(BaseState):
             (255, 255, 255),
             shadowed=True,
         )
+
+        # Draw the fade overlay on top of everything
+        if self.fade_alpha > 0:
+            self.fade_overlay.fill((0, 0, 0, int(self.fade_alpha)))
+            surface.blit(self.fade_overlay, (0, 0))
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "pause" and input_data.pressed:
