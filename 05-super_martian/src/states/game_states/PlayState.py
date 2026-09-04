@@ -9,6 +9,8 @@ This file contains the class PlayState.
 """
 
 from src.FlyingCreature import FlyingCreature
+from src.states.entities import creatures_states
+from src import commands
 from typing import Dict, Any
 
 import pygame
@@ -60,7 +62,7 @@ class PlayState(BaseState):
         self.clock = enter_params.get("clock")
 
         if self.clock is None:
-            self.clock = Clock(50)
+            self.clock = Clock(150)
 
             def countdown_timer():
                 self.clock.count_down()
@@ -110,6 +112,10 @@ class PlayState(BaseState):
                 break
 
     def update(self, dt: float) -> None:
+        
+        if(self.level == settings.NUM_LEVELS and self.player.score >= settings.KEY_SCORE_TARGET and not self.transitioning):
+            self._begin_level_transition()
+        
         if self.player.is_dead:
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()
@@ -128,18 +134,25 @@ class PlayState(BaseState):
         if not self.is_victory:
             for creature in self.game_level.creatures:
                 if self.player.collides(creature):
-                    
+
                     # introduce stomp like in a certain game by a company I can't mention
                     if (self.player.vy > 0 and
                             self.player.y + self.player.height <= creature.y + creature.height / 2):
                         if isinstance(creature, FlyingCreature):
                             creature.change_state("fall")
+                            self.player.score += 50
                         else:
-                            creature.is_dead = True
-                        self.player.score += 50
+                            # Ground snail go hidden on first stomp instead of dying
+                            creature.change_state("hidden")
                         self.player.vy = -settings.JUMP_CUT_VELOCITY  # small bounce
                     else:
-                        self.player.change_state("dead")
+                        # It eliminates the damage if the creatine is hidden or falling out
+                        is_neutralized = isinstance(
+                            creature.state_machine.current,
+                            (creatures_states.FlyingFallState, creatures_states.SnailHiddenState),
+                        )
+                        if not is_neutralized:
+                            self.player.change_state("dead")
 
         # Reveal the key block once the score target is reached
         if (
@@ -154,7 +167,6 @@ class PlayState(BaseState):
                 self._key_block_col,
                 self._key_block_gid,
             )
-            settings.SOUNDS["victory"].play()
             Timer.clear() 
 
         # Coin collection is disabled after victory; the Key is still collidable
@@ -175,23 +187,28 @@ class PlayState(BaseState):
                     self._begin_level_transition()
 
     def _begin_level_transition(self) -> None:
-        self.transitioning = True
 
+        self.transitioning = True
+        settings.SOUNDS["victory"].play()
+        self.player.change_state("idle")
+        commands.STOP_MOVE_LEFT.execute(self.player)
+        commands.STOP_MOVE_RIGHT.execute(self.player)
         Timer.clear()
 
         Timer.tween(
-            1.0,
+            3.5,
             [(self, {"fade_alpha": 255})],
             ease_function_name="linear",
             on_finish=self._go_to_next_level,
         )
 
     def _go_to_next_level(self) -> None:
-        next_level = self.level + 1
-
         pygame.mixer.music.stop()
         pygame.mixer.music.unload()
-        self.state_machine.change("play", level=next_level)
+        if self.level == settings.NUM_LEVELS:
+            self.state_machine.change("game_over", self.player)
+        else:
+            self.state_machine.change("play", level=self.level + 1)
 
     def render(self, surface: pygame.Surface) -> None:
         self.game_level.render(surface, self.camera)
@@ -199,7 +216,7 @@ class PlayState(BaseState):
 
         render_text(
             surface,
-            f"Score: {self.player.score}",
+            f"Score: {self.player.score}/{settings.KEY_SCORE_TARGET}",
             settings.FONTS["small"],
             5,
             5,
@@ -234,4 +251,5 @@ class PlayState(BaseState):
                 clock=self.clock,
             )
         else:
-            self.player.on_input(input_id, input_data)
+            if(not self.transitioning):
+                self.player.on_input(input_id, input_data)
