@@ -50,9 +50,12 @@ class GameObject:
         pass
 
     def render(self, surface: pygame.Surface, offset_x: float = 0, offset_y: float = 0) -> None:
-        frame_index = self.states[self.state].get("frame", self.frame_index)
+        current_state_def = self.states[self.state]
+        frame_index = current_state_def.get("frame", self.frame_index)
+        texture_id = current_state_def.get("texture", self.texture_id)
+        
         surface.blit(
-            settings.TEXTURES[self.texture_id],
+            settings.TEXTURES[texture_id],
             (self.x + offset_x, self.y + offset_y),
-            settings.frame(self.texture_id, frame_index),
+            settings.frame(texture_id, frame_index),
         )

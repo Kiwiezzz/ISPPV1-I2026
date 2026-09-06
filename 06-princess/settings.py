@@ -20,10 +20,15 @@ from gale import tilemap
 
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "quit")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "move_left")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_a, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RIGHT, "move_right")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_d, "move_right")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_UP, "move_up")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_w, "move_up")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "move_down")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_s, "move_down")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "sword")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_e, "shoot_bow")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "enter")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_KP_ENTER, "enter")
 
@@ -89,6 +94,13 @@ TEXTURES = {
     "character-pot-walk": pygame.image.load(
         BASE_DIR / "assets" / "graphics" / "character_pot_walk.png"
     ),
+    "chest-closed": pygame.image.load(BASE_DIR / "assets" / "graphics" / "ClosedChest.png"),
+    "chest-open": pygame.image.load(BASE_DIR / "assets" / "graphics" / "OpenChest.png"),
+    "bow": pygame.image.load(BASE_DIR / "assets" / "graphics" / "bow.png"),
+    "arrow": pygame.image.load(BASE_DIR / "assets" / "graphics" / "arrow.png"),
+    "character-bow": pygame.image.load(
+        BASE_DIR / "assets" / "graphics" / "character_bow.png"
+    ),
 }
 
 # Used by Room's gale.tilemap.TileMap: TILE_* ids above are 1-based,
@@ -106,6 +118,14 @@ FRAMES = {
     "entities": frames.generate_frames(TEXTURES["entities"], 16, 16),
     "character-pot-lift": frames.generate_frames(TEXTURES["character-pot-lift"], 16, 32),
     "character-pot-walk": frames.generate_frames(TEXTURES["character-pot-walk"], 16, 32),
+    "chest-closed": frames.generate_frames(TEXTURES["chest-closed"], 32, 16),
+    "chest-open": frames.generate_frames(TEXTURES["chest-open"], 32, 16),
+    "bow": frames.generate_frames(TEXTURES["bow"], 16, 16),
+    "arrow-left": frames.generate_frames(TEXTURES["arrow"], 16, 16),
+    "arrow-right": frames.generate_frames(pygame.transform.rotate(TEXTURES["arrow"], 180), 16, 16),
+    "arrow-up": frames.generate_frames(pygame.transform.rotate(TEXTURES["arrow"], -90), 16, 16),
+    "arrow-down": frames.generate_frames(pygame.transform.rotate(TEXTURES["arrow"], 90), 16, 16),
+    "character-bow": frames.generate_frames(TEXTURES["character-bow"], 16, 32),
 }
 
 
@@ -135,6 +155,7 @@ SOUNDS = {
         BASE_DIR / "assets" / "sounds" / "heart_taken.wav"
     ),
     "pot-wall": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "pot_wall.wav"),
+    "chest_open": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "chest_open.wav"),
 }
 
 MUSIC = {

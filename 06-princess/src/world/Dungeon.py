@@ -9,6 +9,7 @@ This file contains the class Dungeon.
 """
 
 import math
+import random
 from typing import Callable, TypeVar
 
 import pygame
@@ -17,6 +18,7 @@ from gale.timer import Timer
 
 import settings
 from src.world.Room import Room
+from src.world.ChestRoom import ChestRoom
 
 
 class Dungeon:
@@ -25,6 +27,7 @@ class Dungeon:
         player: TypeVar("Player"),
         on_game_over: Callable[[], None],
     ) -> None:
+    
         self.player = player
         self.on_game_over = on_game_over
 
@@ -47,7 +50,11 @@ class Dungeon:
         PlayerWalkState/PlayerPotWalkState.
         """
         self.shifting = True
-        self.next_room = Room(self.player, self.on_game_over)
+        
+        if not getattr(self.player, "has_bow", False) and random.random() < 0.10:
+            self.next_room = ChestRoom(self.player, self.on_game_over)
+        else:
+            self.next_room = Room(self.player, self.on_game_over)
 
         # Start all doors in next room as open until we get in.
         for doorway in self.next_room.doorways:

@@ -71,6 +71,11 @@ class InteractCommand(Command):
         receiver.interact_requested = True
 
 
+class ShootBowCommand(Command):
+    def execute(self, receiver, dt: float = 0.0) -> None:
+        receiver.shoot_bow_requested = True
+
+
 MOVE_LEFT = MoveLeftCommand()
 MOVE_RIGHT = MoveRightCommand()
 MOVE_UP = MoveUpCommand()
@@ -81,3 +86,4 @@ STOP_MOVE_UP = StopMoveUpCommand()
 STOP_MOVE_DOWN = StopMoveDownCommand()
 SWORD = SwordCommand()
 INTERACT = InteractCommand()
+SHOOT_BOW = ShootBowCommand()

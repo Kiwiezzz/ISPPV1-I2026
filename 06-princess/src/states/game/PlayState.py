@@ -60,6 +60,7 @@ class PlayState(BaseState):
 
         pygame.mixer.music.load(settings.MUSIC["dungeon"])
         pygame.mixer.music.play(loops=-1)
+        pygame.mixer.music.set_volume(0.5)
 
     def exit(self) -> None:
         pygame.mixer.music.stop()
