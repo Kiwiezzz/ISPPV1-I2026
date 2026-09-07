@@ -112,10 +112,7 @@ class PlayState(BaseState):
                 break
 
     def update(self, dt: float) -> None:
-        
-        if(self.level == settings.NUM_LEVELS and self.player.score >= settings.KEY_SCORE_TARGET and not self.transitioning):
-            self._begin_level_transition()
-        
+
         if self.player.is_dead:
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()
