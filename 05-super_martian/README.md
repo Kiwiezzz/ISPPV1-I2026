@@ -1,5 +1,7 @@
 # 05 - Super Martian
 
+*Read this in other languages: [English](README.md), [Español](README.es.md).*
+
 Game made for the Video Game Programming I (ISPPV1) course at Universidad de Los Andes. The base game is a Super Mario style side-scrolling platformer, written in Python on top of `pygame-ce` and the Gale engine.
 
 ## Requirements and running it
@@ -38,11 +40,11 @@ Two kinds of creatures get in the way: snails that walk along the ground and cre
 
 ### New level (Tiled)
 
-Level 2 is a new level built in Tiled (`assets/tilemaps/level2.json`, 50 by 12 tiles). It has its own layout, its own set of coins and snails, and the key block described below. It draws from `tileset.png` for the terrain and from `tileset2.png` for the hit block. Level 1 was also rebuilt with `tileset2.png`. Flying creatures spawn on both levels at random intervals.
+Level 1 is a new level built in Tiled (`assets/tilemaps/level1.json`, 100 by 12 tiles). It has its own layout, its own set of coins and snails, and the key block described below. It draws from `tileset2.png` and `tileset.png`.
 
 ### Key block and key
 
-Level 2 contains one special tile marked in Tiled with the `is_key` property, placed two columns right and three rows up from where the player starts. It behaves as a fully solid block: you cannot pass through it, and hitting it from below with your head triggers it.
+Level 1 contains one special tile marked in Tiled with the `is_key` property, placed two columns right and three rows up from where the player starts. It behaves as a fully solid block: you cannot pass through it, and hitting it from below with your head triggers it.
 
 The check lives in `GameEntity.update`: when the entity is moving up and bumps into a tile overhead, it reads the tile above its head and, if that tile has `is_key`, calls `on_hit_key_block`. `Player` overrides that method. `PlayState` finds the block when the level loads, remembers its position and tile id, and then hides it by clearing the cell, so the block only shows up once the score target is reached.
 
@@ -66,8 +68,7 @@ Collecting the key plays the victory sound, freezes the player, and fades the sc
 
 Files added or changed for this submission:
 
-- `assets/tilemaps/level2.json`: the new level, including the key block.
-- `assets/tilemaps/level1.json`, `assets/graphics/tileset2.png`: level 1 rebuilt with the new tileset.
+- `assets/tilemaps/level1.json`: the new level, including the key block.
 - `assets/graphics/key.png`, `assets/sounds/hit_block.wav`, `hit_question_block.wav`, `victory.wav`: the key sprite and the new sound effects.
 - `src/Key.py`: the key item, its emergence tween and the stencil rendering.
 - `src/states/entities/creatures_states/SnailHidden.py`: the snail shell state.
