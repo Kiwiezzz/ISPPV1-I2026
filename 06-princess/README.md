@@ -1,5 +1,7 @@
 # 06 - The Legend of the Princess
 
+*Read this in other languages: [English](README.md), [Español](README.es.md).*
+
 Game made for the Video Game Programming I (ISPPV1) course at Universidad de Los Andes. The base game is a 16-bit style dungeon ARPG, written in Python on top of `pygame-ce` and the gale-engine.
 
 ## Requirements and running it
