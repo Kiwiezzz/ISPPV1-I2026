@@ -1,5 +1,7 @@
 # 01 - Pong
 
+*Read this in other languages: [English](README.md), [Español](README.es.md).*
+
 Game made for the Video Game Programming I (ISPPV1) course at Universidad de Los Andes. The base game is a classic Pong, written in Python on top of `pygame-ce` and the Gale engine.
 
 ## Requirements and running it
