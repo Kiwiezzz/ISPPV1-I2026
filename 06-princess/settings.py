@@ -101,7 +101,26 @@ TEXTURES = {
     "character-bow": pygame.image.load(
         BASE_DIR / "assets" / "graphics" / "character_bow.png"
     ),
+    "character-shooting": pygame.image.load(BASE_DIR / "assets" / "graphics" / "character_shooting.png"),
+    "boss": pygame.image.load(BASE_DIR / "assets" / "graphics" / "boss.png"),
+    "boss-inverted": pygame.image.load(BASE_DIR / "assets" / "graphics" / "boss_inverted.png"),
+    "fireball": pygame.image.load(BASE_DIR / "assets" / "graphics" / "fireball.png"),
 }
+
+# Pre-rotated arrow textures, one per travel direction. GameObject.render
+# looks up both TEXTURES[texture_id] and FRAMES[texture_id], so the arrow
+# needs an entry in each dict for every direction it can be drawn facing.
+TEXTURES["arrow-left"] = TEXTURES["arrow"]
+TEXTURES["arrow-right"] = pygame.transform.rotate(TEXTURES["arrow"], 180)
+TEXTURES["arrow-up"] = pygame.transform.rotate(TEXTURES["arrow"], -90)
+TEXTURES["arrow-down"] = pygame.transform.rotate(TEXTURES["arrow"], 90)
+
+# Pre-rotated fireball sheets, one per travel direction. The source sheet
+# points right.
+TEXTURES["fireball-right"] = TEXTURES["fireball"]
+TEXTURES["fireball-left"] = pygame.transform.rotate(TEXTURES["fireball"], 180)
+TEXTURES["fireball-up"] = pygame.transform.rotate(TEXTURES["fireball"], 90)
+TEXTURES["fireball-down"] = pygame.transform.rotate(TEXTURES["fireball"], -90)
 
 # Used by Room's gale.tilemap.TileMap: TILE_* ids above are 1-based,
 # matching this tileset's default first_gid, so they double as gids.
@@ -121,11 +140,19 @@ FRAMES = {
     "chest-closed": frames.generate_frames(TEXTURES["chest-closed"], 32, 16),
     "chest-open": frames.generate_frames(TEXTURES["chest-open"], 32, 16),
     "bow": frames.generate_frames(TEXTURES["bow"], 16, 16),
-    "arrow-left": frames.generate_frames(TEXTURES["arrow"], 16, 16),
-    "arrow-right": frames.generate_frames(pygame.transform.rotate(TEXTURES["arrow"], 180), 16, 16),
-    "arrow-up": frames.generate_frames(pygame.transform.rotate(TEXTURES["arrow"], -90), 16, 16),
-    "arrow-down": frames.generate_frames(pygame.transform.rotate(TEXTURES["arrow"], 90), 16, 16),
+    "arrow-left": frames.generate_frames(TEXTURES["arrow-left"], 16, 16),
+    "arrow-right": frames.generate_frames(TEXTURES["arrow-right"], 16, 16),
+    "arrow-up": frames.generate_frames(TEXTURES["arrow-up"], 16, 16),
+    "arrow-down": frames.generate_frames(TEXTURES["arrow-down"], 16, 16),
     "character-bow": frames.generate_frames(TEXTURES["character-bow"], 16, 32),
+    "character-shooting": frames.generate_frames(TEXTURES["character-shooting"], 16, 32),
+    "boss": frames.generate_frames(TEXTURES["boss"], 32, 32),
+    "boss-inverted": frames.generate_frames(TEXTURES["boss-inverted"], 32, 32),
+    "fireball": frames.generate_frames(TEXTURES["fireball"], 16, 16),
+    "fireball-right": frames.generate_frames(TEXTURES["fireball-right"], 16, 16),
+    "fireball-left": frames.generate_frames(TEXTURES["fireball-left"], 16, 16),
+    "fireball-up": frames.generate_frames(TEXTURES["fireball-up"], 16, 16),
+    "fireball-down": frames.generate_frames(TEXTURES["fireball-down"], 16, 16),
 }
 
 
@@ -156,6 +183,7 @@ SOUNDS = {
     ),
     "pot-wall": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "pot_wall.wav"),
     "chest_open": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "chest_open.wav"),
+    "bow": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "bow.wav"),
 }
 
 MUSIC = {

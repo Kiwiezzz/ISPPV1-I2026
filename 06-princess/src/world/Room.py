@@ -73,7 +73,7 @@ def _doorway_opening_for(
         None if rect isn't near any doorway right now.
     """
     for direction, zone in _DOORWAY_ZONES.items():
-        if zone.colliderect(rect):
+        if direction in doorways_by_direction and zone.colliderect(rect):
             return doorways_by_direction[direction].get_collision_rect()
 
     return None
@@ -154,10 +154,10 @@ class Room:
                 and not self.player.invulnerable
             ):
                 settings.SOUNDS["hit-player"].play()
-                self.player.damage(1)
+                self.player.damage(getattr(entity, "contact_damage", 1))
                 self.player.go_invulnerable(1.5)
 
-                if self.player.health == 0:
+                if self.player.health <= 0:
                     self.on_game_over()
 
         self.entities = [entity for entity in self.entities if not entity.dead]
@@ -186,6 +186,12 @@ class Room:
                     entity.damage(1)
                     settings.SOUNDS["hit-enemy"].play()
                     projectile.dead = True
+
+                    # An entity with an "inverted" state is the boss: an
+                    # arrow hit sends it into its inverted-colour /
+                    # (later) sword-vulnerable window.
+                    if "inverted" in entity.state_machine.states:
+                        entity.change_state("inverted")
 
             if projectile.dead:
                 self.projectiles.remove(projectile)

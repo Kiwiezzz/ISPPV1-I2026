@@ -37,6 +37,11 @@ class PlayerWalkState(BaseEntityState):
     def update(self, dt: float) -> None:
         player = self.entity
 
+        if player.shoot_bow_requested and player.bow is not None:
+            player.shoot_bow_requested = False
+            player.change_state("bow")
+            return
+
         if player.sword_requested:
             player.sword_requested = False
             player.change_state("swing-sword")
@@ -50,19 +55,20 @@ class PlayerWalkState(BaseEntityState):
                 return
 
         held = player.held
+        prefix = "bow-" if player.bow_equipped else ""
 
         if held["move_left"]:
             player.direction = "left"
-            player.change_animation("walk-left")
+            player.change_animation(f"{prefix}walk-left")
         elif held["move_right"]:
             player.direction = "right"
-            player.change_animation("walk-right")
+            player.change_animation(f"{prefix}walk-right")
         elif held["move_up"]:
             player.direction = "up"
-            player.change_animation("walk-up")
+            player.change_animation(f"{prefix}walk-up")
         elif held["move_down"]:
             player.direction = "down"
-            player.change_animation("walk-down")
+            player.change_animation(f"{prefix}walk-down")
         else:
             player.change_state("idle")
             return

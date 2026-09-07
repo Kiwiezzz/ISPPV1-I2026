@@ -19,6 +19,7 @@ from gale.timer import Timer
 import settings
 from src.world.Room import Room
 from src.world.ChestRoom import ChestRoom
+from src.world.BossRoom import BossRoom
 
 
 class Dungeon:
@@ -51,8 +52,20 @@ class Dungeon:
         """
         self.shifting = True
         
-        if not getattr(self.player, "has_bow", False) and random.random() < 0.10:
+        if getattr(self.player, "bow", None) is None and random.random() < 0.3:
             self.next_room = ChestRoom(self.player, self.on_game_over)
+        elif (random.random() < 0.3):
+            if shift_x > 0:
+                entrance_direction = "left"
+            elif shift_x < 0:
+                entrance_direction = "right"
+            elif shift_y > 0:
+                entrance_direction = "top"
+            else:
+                entrance_direction = "bottom"
+            self.next_room = BossRoom(
+                self.player, self.on_game_over, entrance_direction
+            )
         else:
             self.next_room = Room(self.player, self.on_game_over)
 

@@ -28,6 +28,9 @@ class PlayerSwingSwordState(BaseEntityState):
         super().__init__(player, state_machine)
         self.dungeon = dungeon
 
+        # Swinging the sword puts the bow away.
+        self.entity.bow_equipped = False
+
         # Render offset for spaced character sprite.
         self.entity.offset_y = 5
         self.entity.offset_x = 8
@@ -55,6 +58,9 @@ class PlayerSwingSwordState(BaseEntityState):
         self.sword_hitbox = pygame.Rect(round(x), round(y), width, height)
         self.entity.change_animation(f"sword-{direction}")
 
+        # Entities already damaged by this swing, so each swing lands once.
+        self.already_hit = set()
+
     def enter(self) -> None:
         settings.SOUNDS["sword"].stop()
         settings.SOUNDS["sword"].play()
@@ -71,9 +77,17 @@ class PlayerSwingSwordState(BaseEntityState):
             return
 
         for entity in self.dungeon.current_room.entities:
-            if entity.collides(self.sword_hitbox):
-                entity.damage(1)
-                settings.SOUNDS["hit-enemy"].play()
+            if entity in self.already_hit or not entity.collides(self.sword_hitbox):
+                continue
+
+            # The boss shrugs off the sword unless it is in its vulnerable
+            # state; every other entity is hit normally.
+            if not getattr(entity, "sword_vulnerable", True):
+                continue
+
+            entity.damage(1)
+            settings.SOUNDS["hit-enemy"].play()
+            self.already_hit.add(entity)
 
         if self.entity.current_animation.times_played > 0:
             self.entity.current_animation.times_played = 0

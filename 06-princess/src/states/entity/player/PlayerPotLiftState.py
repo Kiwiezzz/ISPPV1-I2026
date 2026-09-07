@@ -27,6 +27,8 @@ class PlayerPotLiftState(BaseEntityState):
     ) -> None:
         super().__init__(player, state_machine)
         self.dungeon = dungeon
+        # Both hands are on the pot now, so the bow goes away.
+        self.entity.bow_equipped = False
         self.entity.change_animation(f"pot-lift-{self.entity.direction}")
 
     def enter(self, pot: Any) -> None:

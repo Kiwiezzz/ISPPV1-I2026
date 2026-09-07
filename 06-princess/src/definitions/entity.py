@@ -111,29 +111,53 @@ ENTITY_DEFS: Dict[str, Dict[str, Any]] = {
             "pot-idle-up": {"frames": [9], "texture": "character-pot-walk"},
             "pot-idle-left": {"frames": [13], "texture": "character-pot-walk"},
             "bow-down": {
-                "frames": [1, 2, 3],
+                "frames": [1,2],
                 "interval": 0.1,
                 "loops": 1,
-                "texture": "character-bow",
+                "texture": "character-shooting",
             },
             "bow-right": {
-                "frames": [4, 5, 6],
+                "frames": [3,4],
                 "interval": 0.1,
                 "loops": 1,
-                "texture": "character-bow",
+                "texture": "character-shooting",
             },
             "bow-up": {
-                "frames": [7, 8, 9],
+                "frames": [5,6],
                 "interval": 0.1,
                 "loops": 1,
-                "texture": "character-bow",
+                "texture": "character-shooting",
             },
             "bow-left": {
-                "frames": [10, 11, 12],
+                "frames": [7,8],
                 "interval": 0.1,
                 "loops": 1,
+                "texture": "character-shooting",
+            },
+            "bow-walk-down": {
+                "frames": [1, 2, 3, 4],
+                "interval": 0.15,
                 "texture": "character-bow",
             },
+            "bow-walk-right": {
+                "frames": [5, 6, 7, 8],
+                "interval": 0.15,
+                "texture": "character-bow",
+            },
+            "bow-walk-up": {
+                "frames": [9, 10, 11, 12],
+                "interval": 0.15,
+                "texture": "character-bow",
+            },
+            "bow-walk-left": {
+                "frames": [13, 14, 15, 16],
+                "interval": 0.15,
+                "texture": "character-bow",
+            },
+            "bow-idle-down": {"frames": [1], "texture": "character-bow"},
+            "bow-idle-right": {"frames": [5], "texture": "character-bow"},
+            "bow-idle-up": {"frames": [9], "texture": "character-bow"},
+            "bow-idle-left": {"frames": [13], "texture": "character-bow"},
         },
     },
     "skeleton": {
@@ -199,6 +223,21 @@ ENTITY_DEFS: Dict[str, Dict[str, Any]] = {
             "idle-right": {"frames": [83]},
             "idle-down": {"frames": [59]},
             "idle-up": {"frames": [95]},
+        },
+    },
+    "boss": {
+        "walk_speed": 90,
+        "animations": {
+            "idle": {
+                "frames": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                "interval": 0.1,
+                "texture": "boss",
+            },
+            "inverted": {
+                "frames": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                "interval": 0.1,
+                "texture": "boss-inverted",
+            },
         },
     },
 }

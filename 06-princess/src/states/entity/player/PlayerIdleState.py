@@ -31,9 +31,15 @@ class PlayerIdleState(BaseEntityState):
         # Render offset for spaced character sprite.
         self.entity.offset_y = 5
         self.entity.offset_x = 0
-        self.entity.change_animation(f"idle-{self.entity.direction}")
+        prefix = "bow-" if self.entity.bow_equipped else ""
+        self.entity.change_animation(f"{prefix}idle-{self.entity.direction}")
 
     def update(self, dt: float) -> None:
+        if self.entity.shoot_bow_requested and self.entity.bow is not None:
+            self.entity.shoot_bow_requested = False
+            self.entity.change_state("bow")
+            return
+
         if self.entity.sword_requested:
             self.entity.sword_requested = False
             self.entity.change_state("swing-sword")

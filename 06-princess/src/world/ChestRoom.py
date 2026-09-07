@@ -19,6 +19,7 @@ from gale.timer import Timer
 from gale.input_handler import InputHandler
 
 import settings
+from src.Bow import Bow
 from src.definitions.game_objects import GAME_OBJECT_DEFS
 from src.GameObject import GameObject
 from src.world.Room import Room
@@ -29,6 +30,8 @@ class ChestRoom(Room):
         self.chest_opened: bool = False
         self.during_animation: bool = False
         self.fake_bow: GameObject = None 
+        #This resolve an animation bug when de player collides with chest
+        self._saved_player_pos: Optional[tuple[float, float]] = None
 
         for doorway in self.doorways:
             doorway.open = True
@@ -72,11 +75,11 @@ class ChestRoom(Room):
 
             if self.player.direction == "up" and chest_left_col <= player_col <= chest_right_col and chest_row == player_row - 1:
                 #fix player position during animation
-                self.player.interact_requested = False
-                self.player.x = chest.x + (chest.width / 2) - (self.player.width / 2)
-                self.player.y = chest.y + chest.height
-                
+                self._saved_player_pos = (self.player.x + 0.1, self.player.y + 0.1)
+                self.player.interact_requested = False               
                 self._opening_chest()
+
+
                 return
 
         super().update(dt)
@@ -97,8 +100,7 @@ class ChestRoom(Room):
         chest = self.objects[0]
         chest.state = "opened"
         
-        if "chest_open" in settings.SOUNDS:
-            settings.SOUNDS["chest_open"].play()
+        settings.SOUNDS["chest_open"].play()
             
         self.player.change_state("idle")
         self.player.direction = "up"
@@ -123,17 +125,19 @@ class ChestRoom(Room):
                 self.player.change_animation("pot-idle-down")
             
             #I wanted to do it with a lambda function, but it was a less readable code
-            Timer.after(0.5, change_direction)
+            Timer.after(0.1, change_direction)
             
             def return_to_normal():
                 self.player.change_state("idle")
                 self.fake_bow = None
                 self.during_animation = False
-                self.player.has_bow = True
+                self.player.bow = Bow()
+                self.player.x, self.player.y = self._saved_player_pos
+                self._saved_player_pos = None
                 
-            Timer.after(4.0, return_to_normal)
+            Timer.after(3.0, return_to_normal)
 
-        Timer.after(8, raising_the_bow)
+        Timer.after(7.5, raising_the_bow)
 
     def render(self, surface: pygame.Surface, camera_offset_x: float = 0, camera_offset_y: float = 0) -> None:
         super().render(surface, camera_offset_x, camera_offset_y)

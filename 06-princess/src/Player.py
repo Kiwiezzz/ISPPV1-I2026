@@ -39,7 +39,12 @@ class Player(Entity):
         self.sword_requested = False
         self.shoot_bow_requested = False
         self.interact_requested = False
-        self.has_bow = False
+        self.bow = None
+
+        # Persistent mode: once the bow is drawn (E), the player keeps it in
+        # hand -- idle/walk render from the character-bow sheet -- until a
+        # sword swing (SPACE) or picking up a pot puts it away again.
+        self.bow_equipped = False
 
         self.command_bindings = CommandBindings()
         self.command_bindings.bind("move_left", press=MOVE_LEFT, release=STOP_MOVE_LEFT)
