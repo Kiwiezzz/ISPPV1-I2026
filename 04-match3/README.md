@@ -1,5 +1,7 @@
 # 04 - Match 3
 
+*Read this in other languages: [English](README.md), [Español](README.es.md).*
+
 Game made for the Video Game Programming I (ISPPV1) course at Universidad de Los Andes. The base game is a Bejeweled style match-3 puzzle, written in Python on top of `pygame-ce` and the Gale engine.
 
 ## Requirements and running it
