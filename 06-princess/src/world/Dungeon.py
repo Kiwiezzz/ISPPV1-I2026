@@ -52,9 +52,9 @@ class Dungeon:
         """
         self.shifting = True
         
-        if getattr(self.player, "bow", None) is None and random.random() < 0.3:
+        if self.player.bow is None and random.random() < 0.3:
             self.next_room = ChestRoom(self.player, self.on_game_over)
-        elif (random.random() < 0.3):
+        elif self.player.bow is not None and random.random() < 0.3:
             if shift_x > 0:
                 entrance_direction = "left"
             elif shift_x < 0:
