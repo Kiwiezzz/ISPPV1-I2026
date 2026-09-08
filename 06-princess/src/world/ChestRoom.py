@@ -52,6 +52,8 @@ class ChestRoom(Room):
             doorway.open = True
 
         if self.during_animation:
+            # Advance the animation manually and avoid Room.update()/super().update(dt),
+            # which would call player.update(dt) and allow movement
             if self.player.current_animation:
                 self.player.current_animation.update(dt)
             
