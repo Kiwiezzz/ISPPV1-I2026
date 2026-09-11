@@ -80,5 +80,12 @@ class PlayState(BaseState):
 
         self.world.on_input(input_id, input_data)
 
+        if input_id == "party_menu" and input_data.pressed:
+            from src.states.game.PartyMenuState import PartyMenuState
+
+            self.world.freeze_party()
+            self.state_machine.push(PartyMenuState(self.state_machine), play_state=self)
+            return
+
     def render(self, surface: pygame.Surface) -> None:
         self.world.render(surface)

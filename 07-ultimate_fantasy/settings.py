@@ -27,6 +27,7 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "space")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "enter")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_KP_ENTER, "enter")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_p, "pause")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_TAB, "party_menu")
 
 TITLE = "Ultimate Fantasy"
 
@@ -53,6 +54,8 @@ TILE_SIZE = 16
 
 TILE_WIDTH = VIRTUAL_WIDTH // TILE_SIZE
 TILE_HEIGHT = VIRTUAL_HEIGHT // TILE_SIZE
+
+DEFAULT_REST_TIME = 1.5
 
 #
 # tile ids (1-based, matching the tilesheet's slicing -- see settings.frame())

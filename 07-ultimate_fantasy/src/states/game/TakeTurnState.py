@@ -5,67 +5,113 @@ Study Case: Ultimate Fantasy (RPG)
 Author: Alejandro Mujica
 alejandro.j.mujic4@gmail.com
 
-This file contains the class TakeTurnState: drives one full round of
-battle -- every living party member acts (in slot order), then every
-living enemy acts (in list order, AI picking a uniformly random action
-among its own, guaranteed to hit a living target), repeating round after
-round until one side is wiped. Also handles the victory (EXP/level-up)
-and defeat (game over) end-of-battle flows.
+This file contains the class TakeTurnState: the battle's ATB scheduler.
+On enter, every living combatant (party + enemies) starts resting. Each
+one calls back the instant its own rest_time elapses (BattleEntity.
+start_resting, driven by gale.timer.Timer, keeps ticking regardless of
+what is pushed on top of this state); whoever calls back first is queued
+and, once nothing else is mid-turn, gets to act -- a character through
+SelectActionState, an enemy through AI picking one of its own actions
+against a random living target. After acting, an entity rests again
+using the rest_time of whatever it just did, and the next queued entity
+goes. Also handles the victory (EXP/level-up) and defeat (game over)
+end-of-battle flows.
 """
 
 import math
 import random
-from typing import Any
-
-import pygame
+from typing import Any, Dict, List, Optional
 
 from gale.state import BaseState
 from gale.timer import Timer
 
 import settings
+from src.entity.Character import Character
 
 
 class TakeTurnState(BaseState):
     def enter(self, battle_state: Any) -> None:
         self.battle_state = battle_state
+        self.battle_state.battle_over = False
+        self.ready_queue: List[Any] = []
+        self.acting: Optional[Any] = None
         self.enemy_attacks_in_a_row = 0
-        self._take_party_turn(0)
+        self._victory_channel = None
+
+        for character in self.battle_state.party.characters.values():
+            if not character.dead:
+                character.start_resting(self._initial_action(), on_ready=self._on_entity_ready)
+
+        for enemy in self.battle_state.enemies:
+            if not enemy.dead:
+                enemy.start_resting(self._initial_action(), on_ready=self._on_entity_ready)
+
+    def _initial_action(self) -> Dict[str, Any]:
+        spread = random.uniform(-0.4, 0.4)
+        return {"rest_time": max(0.1, settings.DEFAULT_REST_TIME + spread)}
 
     def _party_keys(self):
         return sorted(self.battle_state.party.characters.keys())
 
+    # -- scheduling -------------------------------------------------------
+
+    def _on_entity_ready(self, entity: Any) -> None:
+        if self.battle_state.battle_over or entity.dead:
+            return
+
+        self.ready_queue.append(entity)
+
+        if self.acting is None:
+            self._start_next_turn()
+
+    def _start_next_turn(self) -> None:
+        while self.ready_queue:
+            entity = self.ready_queue.pop(0)
+
+            if entity.dead:
+                continue
+
+            self.acting = entity
+
+            if isinstance(entity, Character):
+                self._start_character_turn(entity)
+            else:
+                self._resolve_enemy_action(entity)
+            return
+
+    def _finish_turn(self, entity: Any, action: Optional[Dict[str, Any]]) -> None:
+        self.acting = None
+
+        if self.battle_state.battle_over:
+            return
+
+        if not entity.dead:
+            entity.start_resting(action, on_ready=self._on_entity_ready)
+
+        self._start_next_turn()
+
     # -- party turns ---------------------------------------------------
 
-    def _take_party_turn(self, index: int) -> None:
-        keys = self._party_keys()
-
-        if index >= len(keys):
-            self._take_enemy_turn(0)
-            return
-
-        character = self.battle_state.party.characters[keys[index]]
-
-        if character.dead:
-            self._take_party_turn(index + 1)
-            return
-
+    def _start_character_turn(self, character: Any) -> None:
         from src.states.game.BattleMessageState import BattleMessageState
 
         self.state_machine.push(
             BattleMessageState(self.state_machine),
             battle_state=self.battle_state,
             message=f"Turn for {character.name}! Select an action.",
-            on_close=lambda: self._prompt_action(character, index),
+            on_close=lambda: self._prompt_action(character),
         )
 
-    def _prompt_action(self, character: Any, index: int) -> None:
+    def _prompt_action(self, character: Any) -> None:
         from src.states.game.SelectActionState import SelectActionState
 
-        def on_action_selected() -> None:
+        def on_action_selected(action: Optional[Dict[str, Any]]) -> None:
             if all(enemy.dead for enemy in self.battle_state.enemies):
+                self.battle_state.battle_over = True
                 self._victory()
-            else:
-                self._take_party_turn(index + 1)
+                return
+
+            self._finish_turn(character, action)
 
         self.state_machine.push(
             SelectActionState(self.state_machine),
@@ -76,19 +122,7 @@ class TakeTurnState(BaseState):
 
     # -- enemy turns ----------------------------------------------------
 
-    def _take_enemy_turn(self, index: int) -> None:
-        enemies = self.battle_state.enemies
-
-        if index >= len(enemies):
-            self._take_party_turn(0)
-            return
-
-        enemy = enemies[index]
-
-        if enemy.dead:
-            self._take_enemy_turn(index + 1)
-            return
-
+    def _resolve_enemy_action(self, enemy: Any) -> None:
         self.enemy_attacks_in_a_row += 1
         action = random.choice(enemy.actions)
 
@@ -120,6 +154,7 @@ class TakeTurnState(BaseState):
             )
 
         if all(character.dead for character in self.battle_state.party.characters.values()):
+            self.battle_state.battle_over = True
             self._faint()
             return
 
@@ -131,10 +166,10 @@ class TakeTurnState(BaseState):
                 and enemy.klass == "boss"
                 and random.randint(1, 3) == 1
             ):
-                self._take_enemy_turn(index)
+                self._resolve_enemy_action(enemy)
             else:
                 self.enemy_attacks_in_a_row = 0
-                self._take_enemy_turn(index + 1)
+                self._finish_turn(enemy, action)
 
         self.state_machine.push(
             BattleMessageState(self.state_machine),
@@ -344,4 +379,7 @@ class TakeTurnState(BaseState):
             on_complete=on_complete,
         )
 
-    _victory_channel = None
+    def update(self, dt: float) -> None:
+        for enemy in self.battle_state.enemies:
+            if not enemy.dead:
+                enemy.update(dt)

@@ -14,6 +14,9 @@ import math
 import random
 from typing import Any, Dict, List
 
+from gale.timer import Timer
+
+import settings
 from src.entity.Entity import Entity
 
 
@@ -37,6 +40,7 @@ class BattleEntity(Entity):
         self.magic: float = self.base_magic
 
         self.current_hp: float = self.hp
+        self.ready: bool = False
 
     def damage(self, amount: float) -> None:
         self.current_hp -= amount
@@ -58,3 +62,15 @@ class BattleEntity(Entity):
 
     def compute_healing(self) -> int:
         return math.floor(random.random() * 2 * self.magic)
+
+    def start_resting(self, action=None, on_ready=None):
+        self.ready = False
+        rest_time = action["rest_time"] if action else settings.DEFAULT_REST_TIME
+
+        def _fire():
+            self.ready = True
+            if on_ready is not None:
+                on_ready(self)
+
+        Timer.after(rest_time, _fire)
+

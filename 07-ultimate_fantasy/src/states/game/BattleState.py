@@ -10,7 +10,7 @@ This file contains the class BattleState: builds the battle background
 BATTLE_HEIGHT), spawns 3-5 random enemies for the current region (or,
 10% of the time in the west region, a final-boss fight against the
 Man-Eater Flower plus two regular west enemies), and kicks off the
-opening dialogue -> BattleMenuState turn loop.
+opening dialogue -> TakeTurnState ATB loop.
 """
 
 import math
@@ -44,6 +44,7 @@ class BattleState(BaseState):
         self.on_exit = on_exit
         self.final_boss = False
         self.battle_started = False
+        self.battle_over = False
 
         self.tilemap = TileMap(
             settings.TILE_SIZE, settings.TILE_SIZE, BATTLE_WIDTH, BATTLE_HEIGHT
@@ -170,8 +171,8 @@ class BattleState(BaseState):
                 enemy.update(dt)
 
     def _trigger_starting_dialogue(self) -> None:
-        from src.states.game.BattleMenuState import BattleMenuState
         from src.states.game.BattleMessageState import BattleMessageState
+        from src.states.game.TakeTurnState import TakeTurnState
 
         def show_go_message() -> None:
             names = ", ".join(
@@ -188,11 +189,11 @@ class BattleState(BaseState):
                 BattleMessageState(self.state_machine),
                 battle_state=self,
                 message=message,
-                on_close=open_menu,
+                on_close=start_turns,
             )
 
-        def open_menu() -> None:
-            self.state_machine.push(BattleMenuState(self.state_machine), battle_state=self)
+        def start_turns() -> None:
+            self.state_machine.push(TakeTurnState(self.state_machine), battle_state=self)
 
         self.state_machine.push(
             BattleMessageState(self.state_machine),
