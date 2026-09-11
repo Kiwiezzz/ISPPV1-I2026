@@ -16,6 +16,7 @@ not the parrot's).
 import math
 
 import pygame
+import random
 
 from gale.physics.shapes import CircleShape
 from gale.physics.world import World
@@ -77,6 +78,12 @@ class Bird:
                 continue
 
             self.has_collided = True
+            if random.randint(1, 3) == 1:
+                settings.SOUNDS["bird_collision1"].play()
+            elif random.randint(1, 3) == 2:
+                settings.SOUNDS["bird_collision2"].play()
+            else:
+                settings.SOUNDS["bird_collision3"].play()
             break
 
     def reset(self) -> None:

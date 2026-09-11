@@ -75,6 +75,12 @@ FONTS = {
     "large": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "RifficFree-Bold.ttf", 48),
 }
 
+SOUNDS = {
+    "background_theme": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "background_theme.mp3"),
+    "bird_collision1": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "bird_collision1.wav"),
+    "bird_collision2": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "bird_collision2.wav"),
+    "bird_collision3": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "bird_collision3.wav"),
+}
 
 def _load(*parts: str) -> pygame.Surface:
     return pygame.image.load(BASE_DIR.joinpath("assets", "graphics", *parts))

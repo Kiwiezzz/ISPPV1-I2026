@@ -20,6 +20,7 @@ import pygame
 from gale.game import Game
 from gale.input_handler import InputData
 from gale.state import StateMachine
+import settings
 
 from src.states.game.PlayState import PlayState
 from src.states.game.VictoryState import VictoryState
@@ -31,6 +32,7 @@ class ThrowABird(Game):
             {"play": PlayState, "victory": VictoryState}
         )
         self.state_machine.change("play")
+        settings.SOUNDS["background_theme"].play(-1)
 
     def fixed_update(self) -> None:
         # Only PlayState drives a physics World; VictoryState has none,
