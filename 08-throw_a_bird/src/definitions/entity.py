@@ -103,14 +103,32 @@ ARCHETYPES: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# The parrot: a heavy, invulnerable circle -- no destructible.script
-# equivalent, it never takes damage.
-BIRD = {
-    "radius": 35,
-    "mass": 2500,
-    "friction": 1.0,
-    "restitution": 0.1,
-    "angular_damping": 0.7,
-    "linear_damping": 0.1,
-    "sprite": "parrot",
+# The birds: heavy, invulnerable circles -- no destructible.script
+# equivalent, they never take damage. "sprite" is the normal look;
+# "damaged_sprite" is the look once a bird has hit something (see
+# Bird.has_collided).
+#
+# Red is the original parrot's own numbers. Blue is lighter and a touch
+# smaller, matching Angry Birds' own blue bird relative to the red one.
+BIRDS: Dict[str, Dict[str, Any]] = {
+    "red": {
+        "radius": 35,
+        "mass": 2500,
+        "friction": 1.0,
+        "restitution": 0.1,
+        "angular_damping": 0.7,
+        "linear_damping": 0.1,
+        "sprite": "parrot",
+        "damaged_sprite": "parrot-damaged",
+    },
+    "blue": {
+        "radius": 28,
+        "mass": 1500,
+        "friction": 1.0,
+        "restitution": 0.1,
+        "angular_damping": 0.7,
+        "linear_damping": 0.1,
+        "sprite": "blue_parrot",
+        "damaged_sprite": "blue_parrot_damaged",
+    },
 }

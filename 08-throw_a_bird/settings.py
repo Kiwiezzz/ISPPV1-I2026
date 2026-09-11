@@ -23,14 +23,17 @@ from gale import input_handler
 
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "quit")
 
-# The only input this game needs: the primary mouse button, used both to
-# aim (drag starting near the bird) and to pan the camera (drag starting
-# anywhere else), and continuous motion while it is held down. See
+# The primary mouse button, used both to aim (drag starting near the
+# bird) and to pan the camera (drag starting anywhere else), and
+# continuous motion while it is held down. See
 # src/states/game/PlayState.py.
 input_handler.InputHandler.set_mouse_click_action(
     input_handler.MOUSE_BUTTON_1, "touch"
 )
 input_handler.InputHandler.set_mouse_motion_action(None, "touch_motion")
+
+# Splits a flying bird into three once pressed mid-throw (spec 1).
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "split")
 
 TITLE = "Throw a Bird"
 
@@ -89,10 +92,14 @@ TEXTURES = {
     "wood-damaged": _load("buildings", "elementWood015.png"),
     "wood-almost-destroyed": _load("buildings", "elementWood047.png"),
     "debris-wood": _load("buildings", "debrisWood_1.png"),
-    # Characters: the bird (parrot) and the two alien archetypes, each
-    # with a single sprite (no visible damage tiers, they just track
-    # energy until death).
+    # Characters: the two bird colors (each with its own "hurt" sprite,
+    # see BIRDS in src/definitions/entity.py) and the two alien
+    # archetypes, which have no visible damage tiers, they just track
+    # energy until death.
     "parrot": _load("characters", "parrot.png"),
+    "parrot-damaged": _load("characters", "parrot_damaged.png"),
+    "blue_parrot": _load("characters", "BlueParrot.png"),
+    "blue_parrot_damaged": _load("characters", "BlueParrot_damaged.png"),
     "alien-square": _load("characters", "alienBlue_square.png"),
     "alien-round": _load("characters", "alienGreen_round.png"),
     # Background/world decoration (parallax scenery + the ground's own

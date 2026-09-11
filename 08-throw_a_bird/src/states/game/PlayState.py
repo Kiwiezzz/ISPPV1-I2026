@@ -24,6 +24,8 @@ than it can visibly fall.
 """
 
 import math
+import random
+from typing import List
 
 import pygame
 
@@ -69,6 +71,22 @@ MAX_PULL_DISTANCE = 150
 # too strong.
 FLING_IMPULSE_SCALE = 13.25
 
+# Spec 1: each fresh bird loaded onto the slingshot has this chance of
+# being the blue (split) bird instead of the plain red one.
+BLUE_BIRD_CHANCE = 0.5
+
+# How far off the original heading (degrees) the two side birds fly once
+# a blue bird splits -- one rotated + this, the other - this, around
+# whatever velocity the original bird had at the moment of the split.
+SPLIT_ANGLE_DEGREES = 20.0
+
+# How far the two side birds spawn from the center bird, along their own
+# heading, as a multiple of their own radius. Needed because
+# touching_bodies treats any overlap as a collision (see
+# Bird.fixed_update): birds created on the same point would start
+# overlapped and immediately register as already hit.
+SPLIT_SPAWN_OFFSET_RADII = 3.0
+
 # A shot is considered "settled" once the bird's linear/angular velocity
 # has been below these thresholds for IDLE_FRAMES_LIMIT consecutive
 # frames (~1.6s at 60fps) -- ported from main.script, retuned for gale's
@@ -92,7 +110,11 @@ class PlayState(BaseState):
         self.world = World(gravity=settings.GRAVITY)
 
         self.level = Level(self.world)
-        self.bird = Bird(self.world, self.level.bird_start.x, self.level.bird_start.y)
+        # self.bird is the one aimed, flung, and used as the zoom/camera
+        # reference; self.birds is every bird currently alive (still
+        # just [self.bird] until a split adds two more).
+        self.birds: List[Bird] = []
+        self._spawn_bird()
 
         self.camera = Camera(settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT)
         self.camera.x, self.camera.y = self.bird.position
@@ -121,6 +143,9 @@ class PlayState(BaseState):
         self.world.fixed_update()
         self.level.fixed_update()
 
+        for bird in self.birds:
+            bird.fixed_update()
+
     def update(self, dt: float) -> None:
         self.level.update(dt)
 
@@ -129,7 +154,7 @@ class PlayState(BaseState):
             return
 
         if self.flinging:
-            self.camera_target.update(self.bird.position)
+            self.camera_target.update(self._birds_centroid())
             self._update_idle()
         elif self.aiming:
             self._hold_bird_while_aiming()
@@ -138,6 +163,22 @@ class PlayState(BaseState):
 
         self._update_zoom(dt)
         self.camera.update(dt)
+
+    def _spawn_bird(self) -> None:
+        """Loads a fresh bird for a new throw, rolling its color (see
+        BLUE_BIRD_CHANCE). Built from scratch rather than repositioning
+        the old one, since red/blue differ in radius/mass, which has to
+        be set when the physics body is created. Destroys every bird
+        still in self.birds first, not just self.bird, since a split
+        throw can leave three of them scattered around the level."""
+        for bird in self.birds:
+            self.world.destroy_body(bird.body)
+
+        color = "blue" if random.random() < BLUE_BIRD_CHANCE else "red"
+        self.bird = Bird(
+            self.world, self.level.bird_start.x, self.level.bird_start.y, color=color
+        )
+        self.birds = [self.bird]
 
     def _hold_bird_at_rest(self) -> None:
         self.bird.reset()
@@ -156,26 +197,34 @@ class PlayState(BaseState):
         self.bird.body.velocity = (0, 0)
         self.bird.body.angular_velocity = 0.0
 
-    def _update_idle(self) -> None:
-        linear_speed = self.bird.body.velocity.length()
-        angular_speed = abs(self.bird.body.angular_velocity)
+    def _birds_centroid(self) -> pygame.Vector2:
+        total = pygame.Vector2()
+        for bird in self.birds:
+            total += bird.position
+        return total / len(self.birds)
 
-        if (
-            linear_speed < IDLE_LINEAR_SPEED_THRESHOLD
-            and angular_speed < IDLE_ANGULAR_SPEED_THRESHOLD
-        ):
+    def _update_idle(self) -> None:
+        # A split throw only settles once every bird in self.birds has
+        # slowed down, not just self.bird.
+        all_settled = all(
+            bird.body.velocity.length() < IDLE_LINEAR_SPEED_THRESHOLD
+            and abs(bird.body.angular_velocity) < IDLE_ANGULAR_SPEED_THRESHOLD
+            for bird in self.birds
+        )
+
+        if all_settled:
             self.idle_frames += 1
 
             if self.idle_frames > IDLE_FRAMES_LIMIT:
                 self.flinging = False
                 self.idle_frames = 0
-                self.bird.reset()
+                self._spawn_bird()
                 self.camera_target.update(self.bird.position)
         else:
             self.idle_frames = 0
 
     def _update_zoom(self, dt: float) -> None:
-        distance = abs(self.bird.position.x - self.bird.initial_position.x)
+        distance = abs(self._birds_centroid().x - self.bird.initial_position.x)
         reach = max(1.0, self.bird.initial_position.x)
         target_ratio = max(
             CAMERA_ZOOM_MIN, min(CAMERA_ZOOM_MAX, math.sqrt(distance / reach))
@@ -187,7 +236,9 @@ class PlayState(BaseState):
     def render(self, surface: pygame.Surface) -> None:
         surface.fill(settings.BG_COLOR)
         self.level.render(surface, self.camera)
-        self.bird.render(surface, self.camera)
+
+        for bird in self.birds:
+            bird.render(surface, self.camera)
 
         if self.aiming:
             self._render_pull_line(surface)
@@ -204,6 +255,42 @@ class PlayState(BaseState):
             self._on_touch(input_data)
         elif input_id == "touch_motion":
             self._on_touch_motion(input_data)
+        elif input_id == "split" and input_data.pressed:
+            self._split_bird()
+
+    def _split_bird(self) -> None:
+        # Only the blue bird carries the split power-up, and only while
+        # it is actually in flight, hasn't hit anything yet (spec 2), and
+        # hasn't already split this throw (powerup_activated).
+        bird = self.bird
+
+        if (
+            not self.flinging
+            or bird.color != "blue"
+            or bird.has_collided
+            or bird.powerup_activated
+        ):
+            return
+
+        bird.powerup_activated = True
+        velocity = bird.body.velocity
+
+        for angle in (-SPLIT_ANGLE_DEGREES, SPLIT_ANGLE_DEGREES):
+            heading = velocity.rotate(angle)
+
+            # Spawned at the center bird's own position, then pushed out
+            # along its own heading, not left stacked on top of it/each
+            # other -- see the SPLIT_SPAWN_OFFSET_RADII comment.
+            split_bird = Bird(self.world, bird.position.x, bird.position.y, color=bird.color)
+            offset = heading.normalize() if heading.length() > 0 else pygame.Vector2(1, 0)
+            split_bird.body.position = (
+                bird.position + offset * split_bird.radius * SPLIT_SPAWN_OFFSET_RADII
+            )
+            split_bird.body.velocity = heading
+            split_bird.body.angular_velocity = bird.body.angular_velocity
+            split_bird.body.angle = bird.body.angle
+            split_bird.powerup_activated = True
+            self.birds.append(split_bird)
 
     def _mouse_to_virtual(self, position) -> pygame.Vector2:
         scale_x = settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH
