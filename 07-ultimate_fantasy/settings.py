@@ -55,8 +55,6 @@ TILE_SIZE = 16
 TILE_WIDTH = VIRTUAL_WIDTH // TILE_SIZE
 TILE_HEIGHT = VIRTUAL_HEIGHT // TILE_SIZE
 
-DEFAULT_REST_TIME = 1.5
-
 #
 # tile ids (1-based, matching the tilesheet's slicing -- see settings.frame())
 #
@@ -84,6 +82,8 @@ TILE_IDS = {
 
 TEXTURES = {
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "sheet.png"),
+    "interior": pygame.image.load(BASE_DIR / "assets" / "graphics" / "interior-sheet.png"),
+    "hall": pygame.image.load(BASE_DIR / "assets" / "graphics" / "hall.png"),
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "background.png"),
     "cursor-right": pygame.image.load(
         BASE_DIR / "assets" / "graphics" / "cursor_right.png"
@@ -137,6 +137,41 @@ TEXTURES = {
 # matching this tileset's default first_gid, so they double as gids
 # with no remapping.
 TILESET = tilemap.Tileset(TEXTURES["tiles"], TILE_SIZE, TILE_SIZE)
+
+INTERIOR_TILESET = tilemap.Tileset(TEXTURES["interior"], TILE_SIZE, TILE_SIZE)
+
+INTERIOR_TILE_IDS = {
+    "floor": [54, 55, 56],
+    "top-left-wall": 30,
+    "top-wall": 31,
+    "top-right-wall": 32,
+    "left-wall": 38,
+    "right-wall": 40,
+    "bottom-left-wall": 46,
+    "bottom-wall": 47,
+    "bottom-right-wall": 48,
+    "bed": [[9, 10], [17, 18]],
+    "dresser": [[11, 12], [19, 20]],
+    "table": [[13, 14], [21, 22]],
+    "wardrobe": [[15, 16], [23, 24]],
+}
+
+# hall.png (exterior guild-hall building sprite): 80x64px = 5x4 tiles.
+# Its door is row 4, column 3 of that sprite (1-based, matching TILE_IDS'
+# convention) -- the middle tile of the bottom row. In 0-based offsets from
+# the building's top-left corner, once it's stamped onto a Region, that's
+# HALL_DOOR_OFFSET below.
+HALL_WIDTH = 5
+HALL_HEIGHT = 4
+HALL_DOOR_OFFSET = {"x": 2, "y": 3}
+
+# Marks a fence-layer cell as solid without giving it a real, visible
+# tile: any gid past TILESET's last_gid (104) has no tileset that
+# contains it, so TileMap.render draws nothing there, letting the
+# ground layer underneath show through hall.png's transparent pixels.
+# It still isn't TILE_IDS["empty"], so the existing wall-collision
+# check keeps blocking it.
+HALL_WALL_GID = 9001
 
 FRAMES = {
     "healer-female": frames.generate_frames(TEXTURES["healer-female"], 16, 18),

@@ -105,6 +105,66 @@ class PartyWalkState(PartyBaseState):
             on_complete=on_fade_in_complete,
         )
 
+    def _check_for_building_entrance(self) -> bool:
+        """Mirrors _check_for_encounter's own shape: checked on the tile the
+        leader actually landed on, once their step has finished, not before
+        it starts. The guild hall's door is just another "empty" gap in the
+        fence layer (like a region gate), so walking onto it is already
+        legal -- this only decides what happens once they're standing
+        there."""
+        party = self.party
+        leader = party.first_alive()
+
+        if leader is None:
+            return False
+
+        region = party.world.current_region()
+        door = region.hall_door
+
+        if door is None:
+            return False
+
+        if (leader.map_x, leader.map_y) != (door["x"], door["y"]):
+            return False
+
+        self._trigger_hall_entrance()
+        return True
+
+    def _trigger_hall_entrance(self) -> None:
+        from src.states.game.FadeInState import FadeInState
+        from src.states.game.FadeOutState import FadeOutState
+        from src.states.game.GuildHallState import GuildHallState
+
+        party = self.party
+        stack = party.world.stack
+        region = party.world.current_region()
+
+        restore_x, restore_y = region.hall_door["x"], region.hall_door["y"]
+        restore_direction = "up"
+
+        party.change_state("idle")
+        settings.pause_music("town")
+
+        def on_exit() -> None:
+            settings.resume_music("town")
+            party.set_position(restore_x, restore_y, restore_direction)
+
+        def on_fade_in_complete() -> None:
+            stack.push(GuildHallState(stack), party=party, on_exit=on_exit)
+            stack.push(
+                FadeOutState(stack),
+                color=(255, 255, 255),
+                time=1,
+                on_complete=lambda: None,
+            )
+
+        stack.push(
+            FadeInState(stack),
+            color=(255, 255, 255),
+            time=1,
+            on_complete=on_fade_in_complete,
+        )
+
     def _next_alive_ahead(self, order: List[int], i: int) -> Optional[int]:
         for j in reversed(order):
             if j < i and not self.party.characters[j].dead:
@@ -152,20 +212,24 @@ class PartyWalkState(PartyBaseState):
         dx, dy = self._delta(self.direction)
         to_x, to_y = leader.map_x + dx, leader.map_y + dy
 
+        region = party.world.current_region()
+
+        # Bounds are read off the region itself (not the global TILE_WIDTH/
+        # TILE_HEIGHT) so this same edge-of-map check works correctly for a
+        # smaller, self-contained map too, like the guild hall interior --
+        # not just the full-size overworld regions.
         if to_x < 1:
             party.world.move("left")
             return
-        if to_x > settings.TILE_WIDTH:
+        if to_x > region.tile_width:
             party.world.move("right")
             return
         if to_y < 1:
             party.world.move("up")
             return
-        if to_y > settings.TILE_HEIGHT:
+        if to_y > region.tile_height:
             party.world.move("down")
             return
-
-        region = party.world.current_region()
         if region.tilemap.get_gid("fence", to_y - 1, to_x - 1) != settings.TILE_IDS["empty"]:
             party.change_state("idle")
             return
@@ -205,6 +269,9 @@ class PartyWalkState(PartyBaseState):
 
     def _on_step_finished(self) -> None:
         if self._check_for_encounter():
+            return
+
+        if self._check_for_building_entrance():
             return
 
         held = self.party.held

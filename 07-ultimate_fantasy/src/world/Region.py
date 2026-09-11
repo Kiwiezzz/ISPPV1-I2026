@@ -66,18 +66,32 @@ class Region:
             "west": definition.get("west_gate", False),
         }
 
+        # The guild hall only exists in the town region. Its footprint is
+        # anchored well inside the border (never touching row/col 1 or the
+        # last row/col), so it can never overlap a gate opening, which only
+        # ever carves into those border cells.
+        if self.is_town:
+            self.hall_origin: Optional[Dict[str, int]] = {"x": 3, "y": 3}
+            self.hall_door: Optional[Dict[str, int]] = {
+                "x": self.hall_origin["x"] + settings.HALL_DOOR_OFFSET["x"],
+                "y": self.hall_origin["y"] + settings.HALL_DOOR_OFFSET["y"],
+            }
+        else:
+            self.hall_origin = None
+            self.hall_door = None
+
         self._create_maps()
 
     def _create_maps(self) -> None:
         width, height = self.tile_width, self.tile_height
 
-        # Step A: base layer (ground) -- every cell a random grass variant.
+        # base layer (ground) -- every cell a random grass variant.
         base = self.tilemap.add_layer("base")
         for y in range(1, height + 1):
             for x in range(1, width + 1):
                 base[y - 1][x - 1] = random.choice(TILE_IDS["grass"])
 
-        # Step B: fence layer (border wall).
+        # fence layer (border wall).
         fence = self.tilemap.add_layer("fence")
         for y in range(1, height + 1):
             for x in range(1, width + 1):
@@ -104,7 +118,7 @@ class Region:
 
                 fence[y - 1][x - 1] = tile_id
 
-        # Step C: gate carving (up to 4 gates, 2-tile-wide openings flanked
+        # gate carving (up to 4 gates, 2-tile-wide openings flanked
         # by "border" fence-cap tiles). `_set_fence` takes 1-based tile
         # (x, y) grid coordinates, same convention every other step here
         # uses, and overwrites that cell's gid in the fence layer.
@@ -139,11 +153,36 @@ class Region:
             _set_fence(width, y + 1, TILE_IDS["empty"])
             _set_fence(width, y + 2, TILE_IDS["border-top-right-fence"])
 
-        # Step D: grass/flowers/NPC decoration layer.
+        # guild hall walls. Stamped onto the same fence layer used
+        # for collision, so PartyWalkState's existing wall check blocks the
+        # whole footprint for free -- except the door tile, left "empty" so
+        # walking onto it is legal (that's what actually triggers entering,
+        # see PartyWalkState._check_for_building_entrance). Every other
+        # cell uses HALL_WALL_GID (not a real fence tile) so the grass
+        # underneath shows through hall.png's transparent pixels instead
+        # of a visible tile bleeding out from under the sprite.
+        if self.is_town:
+            ox, oy = self.hall_origin["x"], self.hall_origin["y"]
+            for dy in range(settings.HALL_HEIGHT):
+                for dx in range(settings.HALL_WIDTH):
+                    is_door = (
+                        dx == settings.HALL_DOOR_OFFSET["x"]
+                        and dy == settings.HALL_DOOR_OFFSET["y"]
+                    )
+                    tile_id = TILE_IDS["empty"] if is_door else settings.HALL_WALL_GID
+                    fence[oy - 1 + dy][ox - 1 + dx] = tile_id
+
+        # grass/flowers/NPC decoration layer.
         grass = self.tilemap.add_layer("grass")
         for y in range(1, height + 1):
             for x in range(1, width + 1):
                 if y == 1 or y == height or x == 1 or x == width:
+                    tile_id = TILE_IDS["empty"]
+                elif self._is_inside_hall(x, y):
+                    # Hidden under the hall.png sprite either way, but kept
+                    # empty (and, more importantly, skipped for NPC
+                    # spawning below) so nothing ends up walking around
+                    # inside the building's walls.
                     tile_id = TILE_IDS["empty"]
                 elif self.is_town:
                     if random.random() < 0.2:
@@ -163,6 +202,15 @@ class Region:
                         tile_id = TILE_IDS["empty"]
 
                 grass[y - 1][x - 1] = tile_id
+
+    def _is_inside_hall(self, x: int, y: int) -> bool:
+        if self.hall_origin is None:
+            return False
+
+        ox, oy = self.hall_origin["x"], self.hall_origin["y"]
+        return (
+            ox <= x < ox + settings.HALL_WIDTH and oy <= y < oy + settings.HALL_HEIGHT
+        )
 
     def _create_npc(self, x: int, y: int) -> None:
         width, height = self.tile_width, self.tile_height
@@ -204,6 +252,11 @@ class Region:
 
     def render(self, surface: pygame.Surface) -> None:
         self.tilemap.render(surface)
+
+        if self.hall_origin is not None:
+            hall_x = (self.hall_origin["x"] - 1) * settings.TILE_SIZE
+            hall_y = (self.hall_origin["y"] - 1) * settings.TILE_SIZE
+            surface.blit(settings.TEXTURES["hall"], (hall_x, hall_y))
 
         for npc in self.npcs:
             npc.render(surface)

@@ -7,15 +7,14 @@ alejandro.j.mujic4@gmail.com
 
 This file contains the class TakeTurnState: the battle's ATB scheduler.
 On enter, every living combatant (party + enemies) starts resting. Each
-one calls back the instant its own rest_time elapses (BattleEntity.
+one calls back the instant its own speed_time elapses (BattleEntity.
 start_resting, driven by gale.timer.Timer, keeps ticking regardless of
 what is pushed on top of this state); whoever calls back first is queued
 and, once nothing else is mid-turn, gets to act -- a character through
 SelectActionState, an enemy through AI picking one of its own actions
 against a random living target. After acting, an entity rests again
-using the rest_time of whatever it just did, and the next queued entity
-goes. Also handles the victory (EXP/level-up) and defeat (game over)
-end-of-battle flows.
+using its own speed_time, and the next queued entity goes. Also handles
+the victory (EXP/level-up) and defeat (game over) end-of-battle flows.
 """
 
 import math
@@ -40,15 +39,19 @@ class TakeTurnState(BaseState):
 
         for character in self.battle_state.party.characters.values():
             if not character.dead:
-                character.start_resting(self._initial_action(), on_ready=self._on_entity_ready)
+                character.start_resting(
+                    on_ready=self._on_entity_ready, delay=self._initial_delay(character)
+                )
 
         for enemy in self.battle_state.enemies:
             if not enemy.dead:
-                enemy.start_resting(self._initial_action(), on_ready=self._on_entity_ready)
+                enemy.start_resting(
+                    on_ready=self._on_entity_ready, delay=self._initial_delay(enemy)
+                )
 
-    def _initial_action(self) -> Dict[str, Any]:
+    def _initial_delay(self, entity: Any) -> float:
         spread = random.uniform(-0.4, 0.4)
-        return {"rest_time": max(0.1, settings.DEFAULT_REST_TIME + spread)}
+        return max(0.1, entity.speed_time + spread)
 
     def _party_keys(self):
         return sorted(self.battle_state.party.characters.keys())
@@ -79,14 +82,14 @@ class TakeTurnState(BaseState):
                 self._resolve_enemy_action(entity)
             return
 
-    def _finish_turn(self, entity: Any, action: Optional[Dict[str, Any]]) -> None:
+    def _finish_turn(self, entity: Any) -> None:
         self.acting = None
 
         if self.battle_state.battle_over:
             return
 
         if not entity.dead:
-            entity.start_resting(action, on_ready=self._on_entity_ready)
+            entity.start_resting(on_ready=self._on_entity_ready)
 
         self._start_next_turn()
 
@@ -111,7 +114,7 @@ class TakeTurnState(BaseState):
                 self._victory()
                 return
 
-            self._finish_turn(character, action)
+            self._finish_turn(character)
 
         self.state_machine.push(
             SelectActionState(self.state_machine),
@@ -169,7 +172,7 @@ class TakeTurnState(BaseState):
                 self._resolve_enemy_action(enemy)
             else:
                 self.enemy_attacks_in_a_row = 0
-                self._finish_turn(enemy, action)
+                self._finish_turn(enemy)
 
         self.state_machine.push(
             BattleMessageState(self.state_machine),

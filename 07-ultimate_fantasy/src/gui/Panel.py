@@ -17,7 +17,7 @@ from gale.ui.panel import Panel as GalePanel
 
 
 class Panel(GalePanel):
-    def render(self, surface: pygame.Surface) -> None:
+    def render(self, surface: pygame.Surface, fill_color=(56, 56, 56)) -> None:
         if not self.visible:
             return
 
@@ -25,4 +25,4 @@ class Panel(GalePanel):
         inner = pygame.Rect(
             int(self.x) + 2, int(self.y) + 2, int(self.width) - 4, int(self.height) - 4
         )
-        pygame.draw.rect(surface, (56, 56, 56), inner, border_radius=3)
+        pygame.draw.rect(surface, fill_color, inner, border_radius=3)

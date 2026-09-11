@@ -16,7 +16,6 @@ from typing import Any, Dict, List
 
 from gale.timer import Timer
 
-import settings
 from src.entity.Entity import Entity
 
 
@@ -33,17 +32,19 @@ class BattleEntity(Entity):
         self.base_attack: float = definition["baseAttack"]
         self.base_defense: float = definition["baseDefense"]
         self.base_magic: float = definition["baseMagic"]
+        self.base_speed_time: float = definition["baseSpeedTime"]
 
         self.hp: float = self.base_hp
         self.attack: float = self.base_attack
         self.defense: float = self.base_defense
         self.magic: float = self.base_magic
+        self.speed_time: float = self.base_speed_time
 
         self.current_hp: float = self.hp
         self.ready: bool = False
 
     def damage(self, amount: float) -> None:
-        self.current_hp -= amount
+        self.current_hp = max(0, self.current_hp - amount)
 
         if self.current_hp <= 0:
             self.dead = True
@@ -63,9 +64,15 @@ class BattleEntity(Entity):
     def compute_healing(self) -> int:
         return math.floor(random.random() * 2 * self.magic)
 
-    def start_resting(self, action=None, on_ready=None):
+    def start_resting(self, on_ready=None, delay=None):
         self.ready = False
-        rest_time = action["rest_time"] if action else settings.DEFAULT_REST_TIME
+        rest_time = delay if delay is not None else self.speed_time
+
+        speed_bar = getattr(self, "speed_bar", None)
+        if speed_bar is not None:
+            speed_bar.value = 0
+            speed_bar.max_value = rest_time
+            Timer.tween(rest_time, [(speed_bar, {"value": rest_time})])
 
         def _fire():
             self.ready = True

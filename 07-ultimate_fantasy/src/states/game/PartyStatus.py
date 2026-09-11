@@ -6,11 +6,15 @@ from gale.state import BaseState
 from gale.text import render_text
 
 import settings
+from src.definitions.entity import ENTITY_HEIGHT, ENTITY_WIDTH
 from src.gui.Panel import Panel
 
 _MARGIN = 4
 _FADED_ALPHA = 90
 _WHITE = (255, 255, 255)
+_SPRITE_SCALE = 2
+_DEAD_FILL = (110, 30, 30)
+_ALIVE_FILL = (56, 56, 56)
 
 
 class PartyStatus(BaseState):
@@ -50,7 +54,8 @@ class PartyStatus(BaseState):
 
         for slot, (px, py) in zip(sorted(self.party.characters.keys()), self._panel_slots):
             character = self.party.characters[slot]
-            Panel(px, py, panel_w, panel_h).render(surface)
+            fill_color = _DEAD_FILL if character.dead else _ALIVE_FILL
+            Panel(px, py, panel_w, panel_h).render(surface, fill_color=fill_color)
             self._render_member(surface, character, px, py)
 
         render_text(
@@ -66,7 +71,9 @@ class PartyStatus(BaseState):
     def _render_member(
         self, surface: pygame.Surface, character: Any, px: float, py: float
     ) -> None:
-        x = px + 6
+        self._render_sprite(surface, character, px + 6, py + 6)
+
+        x = px + 12 + ENTITY_WIDTH * _SPRITE_SCALE
         y = py + 5
         line = 10
 
@@ -91,6 +98,20 @@ class PartyStatus(BaseState):
             is_heal = action["target_type"] == "character"
             alpha = 255 if is_heal else _FADED_ALPHA
             self._faded_text(surface, action["name"], x + 8, actions_y + i * line, alpha)
+
+    def _render_sprite(
+        self, surface: pygame.Surface, character: Any, x: float, y: float
+    ) -> None:
+        if character.current_animation is None:
+            return
+
+        frame = settings.TEXTURES[character.texture].subsurface(
+            character.current_animation.get_current_frame()
+        )
+        frame = pygame.transform.scale(
+            frame, (ENTITY_WIDTH * _SPRITE_SCALE, ENTITY_HEIGHT * _SPRITE_SCALE)
+        )
+        surface.blit(frame, (x, y))
 
     def _faded_text(
         self, surface: pygame.Surface, text: str, x: float, y: float, alpha: int

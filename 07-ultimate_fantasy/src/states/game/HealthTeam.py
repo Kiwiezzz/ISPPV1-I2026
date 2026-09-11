@@ -5,7 +5,7 @@ import pygame
 from gale.state import BaseState
 
 import settings
-from src.states.game.ShowTextState import ShowTextState
+from src.states.game.DialogueState import DialogueState
 
 
 class HealthTeam(BaseState):
@@ -24,10 +24,9 @@ class HealthTeam(BaseState):
             text = "Team has been healed"
 
         self.state_machine.push(
-            ShowTextState(self.state_machine),
-            color=(255, 255, 255),
+            DialogueState(self.state_machine),
             text=text,
-            on_complete=self.close,
+            on_close=self.close,
         )
 
     def _heal_action(self, party: Any):

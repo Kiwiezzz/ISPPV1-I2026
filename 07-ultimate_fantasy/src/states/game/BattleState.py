@@ -102,6 +102,7 @@ class BattleState(BaseState):
                     "baseAttack": enemy_def["baseAttack"],
                     "baseDefense": enemy_def["baseDefense"],
                     "baseMagic": enemy_def["baseMagic"],
+                    "baseSpeedTime": enemy_def["baseSpeedTime"],
                     "actions": enemy_def["actions"],
                     "direction": "left",
                     "map_x": position["x"],
@@ -137,9 +138,19 @@ class BattleState(BaseState):
                 color=pygame.Color(189, 32, 32),
                 theme=BAR_THEME,
             )
-            character.exp_bar = ProgressBar(
+            character.speed_bar = ProgressBar(
                 character.x - (width - character.width) / 2,
                 character.y - 6,
+                width,
+                3,
+                value=0,
+                max_value=character.speed_time,
+                color=pygame.Color(230, 190, 50),
+                theme=BAR_THEME,
+            )
+            character.exp_bar = ProgressBar(
+                character.x - (width - character.width) / 2,
+                character.y - 2,
                 width,
                 3,
                 value=character.current_exp,
@@ -160,8 +171,32 @@ class BattleState(BaseState):
                 color=pygame.Color(189, 32, 32),
                 theme=BAR_THEME,
             )
+            enemy.speed_bar = ProgressBar(
+                enemy.x - (width - enemy.width) / 2,
+                enemy.y - 6,
+                width,
+                3,
+                value=0,
+                max_value=enemy.speed_time,
+                color=pygame.Color(230, 190, 50),
+                theme=BAR_THEME,
+            )
 
     def update(self, dt: float) -> None:
+
+        """
+        The ATB wait timers are not updated here. This method only executes when
+        BattleState is at the top of the StateStack, something that rarely 
+        happens during actual combat (since BattleMessageState, SelectActionState,
+        etc., are usually at the top). So manually incrementing rest_timer += dt 
+        here would cause a pause during most of the battle. Instead, each 
+        BattleEntity's wait countdown is managed via 
+        gale.timer.Timer(BattleEntity.start_resting), which gale.game.Game 
+        updates every frame, regardless of which state is at the top of the stack. 
+        It is TakeTurnState that initiates these countdowns and reacts the moment 
+        one of them finishes (as seen in TakeTurnState.enter / _on_entity_ready).
+        """
+        
         if not self.battle_started:
             self.battle_started = True
             self._trigger_starting_dialogue()
@@ -221,11 +256,13 @@ class BattleState(BaseState):
             if not enemy.dead:
                 enemy.render(surface)
                 enemy.energy_bar.render(surface)
+                enemy.speed_bar.render(surface)
 
         for character in self.party.characters.values():
             if not character.dead:
                 character.render(surface)
                 character.energy_bar.render(surface)
+                character.speed_bar.render(surface)
                 character.exp_bar.render(surface)
 
         self.bottom_panel.render(surface)

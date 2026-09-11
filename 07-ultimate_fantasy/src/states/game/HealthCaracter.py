@@ -6,7 +6,7 @@ from gale.state import BaseState
 
 import settings
 from src.gui.Menu import Menu
-from src.states.game.ShowTextState import ShowTextState
+from src.states.game.DialogueState import DialogueState
 
 
 class HealthCaracter(BaseState):
@@ -18,10 +18,9 @@ class HealthCaracter(BaseState):
 
         if self.healer is None:
             self.state_machine.push(
-                ShowTextState(self.state_machine),
-                color=(255, 255, 255),
+                DialogueState(self.state_machine),
                 text="No one can heal an ally right now",
-                on_complete=self.close,
+                on_close=self.close,
             )
             return
 
@@ -59,10 +58,9 @@ class HealthCaracter(BaseState):
         self.play_state.world.dirty = True
 
         self.state_machine.push(
-            ShowTextState(self.state_machine),
-            color=(255, 255, 255),
+            DialogueState(self.state_machine),
             text=f"{target.name} recovered {amount} HP",
-            on_complete=self.close,
+            on_close=self.close,
         )
 
     def close(self) -> None:
